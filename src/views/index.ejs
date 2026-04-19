@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cuida Pet — Home</title>
+  <link rel="stylesheet" href="assets/fonts/fonts.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <a class="logo" aria-label="Cuida Pet" id="logoCuidaPet">
+        <div class="logo__icon">🐾</div>
+        <div class="logo__wordmark">
+          <span>CUIDA</span>
+          <span>PET</span>
+        </div>
+      </a>
+      <div class="nav__links">
+        <a class="nav__link" id="servicosLink">Serviços</a>
+        <a class="nav__link" id="comoFuncionaLink">Como funciona</a>
+        <a class="nav__link" id="avaliacoesLink">Avaliações</a>
+      </div>
+      <div class="nav__actions">
+        <button class="nav__login" id="loginBtn">Entrar</button>
+        <button class="btn-nav-primary" id="signupBtn">Cadastre-se grátis</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero__bg"></div>
+    <div class="hero__dots"></div>
+    <div class="hero__content">
+      <div class="hero__badge">
+        <div class="hero__badge-dot"></div>
+        Plataforma #1 para cuidados pet no Brasil
+      </div>
+      <h1>O melhor cuidado<br>para o seu <em>pet</em></h1>
+      <p>Conecte-se com cuidadores verificados e apaixonados. Hospedagem, passeios, banho e muito mais com segurança e confiança.</p>
+      <div class="hero__cta">
+        <button class="btn-primary" id="findCaregiverBtn">🐾 Encontrar cuidador</button>
+        <a href="como-funciona.html" class="btn-outline">Como funciona →</a>
+      </div>
+      <div class="hero__stats">
+        <div class="stat">
+          <span class="stat__num">12k+</span>
+          <span class="stat__label">Cuidadores ativos</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat__num">98%</span>
+          <span class="stat__label">Satisfação dos tutores</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat__num">50k+</span>
+          <span class="stat__label">Pets felizes</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer__inner">
+      <div class="footer__copy">&copy; 2024 Cuida Pet. Todos os direitos reservados.</div>
+      <div class="footer__links">
+        <a href="#">Privacidade</a>
+        <a href="#">Termos</a>
+        <a href="#">Contato</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL LOGIN -->
+  <div class="modal" id="loginModal" aria-hidden="true">
+    <div class="modal__overlay"></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true">
+      <button class="modal__close" id="closeModalBtn">✕</button>
+      <div class="modal__logo">
+        <div class="logo__icon">🐾</div>
+      </div>
+      <h3>Bem-vindo de volta!</h3>
+      <p class="modal__sub">Entre na sua conta para acessar cuidadores.</p>
+      <form class="login-form" id="loginForm">
+        <div class="input-group">
+          <label for="cpf">CPF</label>
+          <input type="text" id="cpf" placeholder="000.000.000-00" maxlength="14" />
+        </div>
+        <div class="input-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" placeholder="voce@email.com" />
+        </div>
+        <div class="input-group">
+          <label for="password">Senha</label>
+          <input type="password" id="password" placeholder="Digite sua senha" />
+        </div>
+        <button type="submit" class="btn-login-submit">Entrar na minha conta</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <span class="toast__icon">✅</span>
+    <span id="toastText"></span>
+  </div>
+
+  <script src="/assets/js/home.bundle.js"></script>
+</body>
+</html>
