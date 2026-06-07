@@ -1,0 +1,6 @@
+version: '3.8'
+
+# Banco de dados agora será hospedado no Supabase.
+# Este docker-compose pode ser utilizado no futuro para serviços adicionais, se necessário.
+services: {}
+
