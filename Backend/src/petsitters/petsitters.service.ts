@@ -125,24 +125,25 @@ export class PetsittersService {
       let score = 0;
       const matchReasons: string[] = [];
 
-      // ── Cidade (20pts) ──────────────────────────────────────────
+      // ── Cidade (30pts) ──────────────────────────────────────────
       const cityMatch =
         profile.city && profile.city.toLowerCase() === city.toLowerCase();
       if (cityMatch) {
-        score += 20;
+        score += 30;
+        matchReasons.push(`🏙️ Atende em ${city}`);
       }
 
-      // ── Bairro/Proximidade (20pts) ───────────────────────────────
+      // ── Bairro/Proximidade (15pts) ───────────────────────────────
       const neighborhoodMatch =
         neighborhood &&
         profile.location &&
         profile.location.toLowerCase().includes(neighborhood.toLowerCase());
       if (neighborhoodMatch) {
-        score += 20;
+        score += 15;
         matchReasons.push(`📍 Atende no bairro ${neighborhood}`);
       }
 
-      // ── Disponibilidade no horário (20pts) ───────────────────────
+      // ── Disponibilidade no horário (25pts) ───────────────────────
       let availabilityMatch = false;
       if (date && profile.scheduleConfig) {
         try {
@@ -181,7 +182,7 @@ export class PetsittersService {
       }
 
       if (availabilityMatch) {
-        score += 20;
+        score += 25;
         if (date) {
           const dateObj = new Date(date + 'T12:00:00');
           const dayName = PT_DAYS[dateObj.getDay()];
@@ -193,18 +194,23 @@ export class PetsittersService {
         }
       }
 
-      // ── Avaliação (25pts) ────────────────────────────────────────
-      if (profile.rating) {
-        const ratingScore = (profile.rating / 5) * 25;
+      // ── Avaliação (15–25pts) ─────────────────────────────────────
+      // Petsitters novos (sem avaliações) recebem 15pts de bônus de confiança.
+      // Petsitters avaliados recebem até 25pts proporcionalmente.
+      if (profile.rating && profile.totalReviews > 0) {
+        const ratingScore = 15 + (profile.rating / 5) * 10;
         score += ratingScore;
         matchReasons.push(
           `⭐ ${profile.rating.toFixed(1)} estrelas · ${profile.totalReviews} avaliações`,
         );
+      } else {
+        // Novo petsitter: bônus de confiança
+        score += 15;
+        matchReasons.push(`🆕 Novo na plataforma`);
       }
 
-      // ── Orçamento (15pts) ────────────────────────────────────────
+      // ── Orçamento (10–15pts) ──────────────────────────────────────
       if (maxPrice !== undefined) {
-        // Escolhe o preço mais relevante: pricingConfig do serviço, ou pricePerHour
         const pConfig = profile.pricingConfig as Record<
           string,
           { price: number }
@@ -218,8 +224,8 @@ export class PetsittersService {
           );
         }
       } else {
-        // Sem limite de orçamento: pontuação proporcional pela acessibilidade
-        score += 7; // Bônus neutro
+        // Sem limite de orçamento: bônus neutro maior
+        score += 10;
       }
 
       return {
