@@ -113,8 +113,20 @@ os itens 5-8.
 - Atualizar variáveis de ambiente no Render: `DATABASE_URL`, `DIRECT_URL`,
   `JWT_SECRET`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, e a senha nova do
   admin (rotacionada localmente — ver `Backend/prisma/rotate-admin-password.ts`).
-- Limpar histórico do git das credenciais antigas já rotacionadas (o `Backend/.env`
-  original vazado — senha do banco e `JWT_SECRET` já foram trocados; confirmar se
-  o histórico do repositório remoto precisa de limpeza/squash).
 - Escrever testes automatizados de auth (rotação de refresh token, detecção de
   reuso, CSRF) e de upload (magic bytes, limite de tamanho, guards de admin).
+
+## [CONCLUÍDO 2026-07-23] Limpar histórico do git das credenciais antigas
+O commit inicial do repositório remoto (`github.com/romaomiguel/CuidaPet`)
+tinha um `teste.txt` com `DATABASE_URL`/`DIRECT_URL` (senha do Postgres) e
+`JWT_SECRET` reais expostos. As credenciais em si já tinham sido rotacionadas
+na época do incidente original (senha do banco e `JWT_SECRET` trocados antes
+mesmo desta limpeza) — o valor vazado já estava morto, então isso fechava só
+a pendência de higiene do repositório, não um risco de credencial ativa.
+
+Removido via reescrita de histórico (`git filter-branch --index-filter`,
+rodado numa clonagem isolada pra não arriscar o working tree local) +
+`git push --force` pra `main`. Confirmado por busca em `git log -p` no
+histórico reescrito: nem o arquivo `teste.txt` nem a senha antiga aparecem
+em nenhum commit alcançável a partir de `main`. `teste.txt` também entrou
+no `.gitignore` da raiz para não voltar a ser commitado por engano.
