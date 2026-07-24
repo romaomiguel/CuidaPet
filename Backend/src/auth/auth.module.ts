@@ -21,7 +21,8 @@ import { UsersModule } from '../users/users.module';
         }
         return {
           secret,
-          signOptions: { expiresIn: '1d' },
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          signOptions: { expiresIn: (process.env.ACCESS_TOKEN_TTL ?? '15m') as any },
         };
       },
     }),

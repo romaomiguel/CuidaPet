@@ -73,7 +73,7 @@ export function AdminUsersPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img 
-                          src={avatarUrl(user.name, user.avatar)} 
+                          src={avatarUrl(user.name, user.avatarUrl ?? undefined)}
                           alt={user.name} 
                           className="w-10 h-10 rounded-full object-cover"
                         />

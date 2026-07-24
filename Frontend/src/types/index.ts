@@ -8,6 +8,9 @@ export interface User {
   phone?: string
   cpf?: string
   avatar?: string
+  /** Signed URL (curta duração) pra exibir o avatar — computada pelo backend a cada
+   * resposta; `avatar` é só o path interno no Storage, não é diretamente renderizável. */
+  avatarUrl?: string | null
   role: UserRole
   isActive?: boolean
   createdAt: string
@@ -65,9 +68,22 @@ export interface PetsitterProfile {
   pricingConfig?: Record<ServiceType, { type: 'fixed' | 'per_hour'; price: number }>
   capacityPerDay: number
   status: 'pending' | 'approved' | 'rejected'
+  /** Path interno no Storage (não é URL renderizável) — presença indica que o
+   * documento foi enviado. Pra visualizar, buscar signed URL via petsitterService. */
   identityProof?: string
   addressProof?: string
   acceptedSpecies?: PetSpecies[]
+  offersLocationSharing: boolean
+}
+
+/**
+ * Shape devolvido por `GET /petsitters/admin/list` (admin only). Não é uma URL/path de
+ * documento — só um indicador booleano de presença, pra decidir se mostra o botão
+ * "ver documento" sem expor path nenhum na listagem.
+ */
+export type AdminPetsitterProfile = Omit<PetsitterProfile, 'identityProof' | 'addressProof'> & {
+  hasIdentityProof: boolean
+  hasAddressProof: boolean
 }
 
 export interface PetsitterFilters {
@@ -123,7 +139,9 @@ export interface Booking {
   totalPrice: number
   notes?: string
   createdAt: string
-  review?: Review
+  /** Presença indica que o booking já foi avaliado — GET /bookings inclui só id/rating/tags,
+   * nunca o objeto Review inteiro (comentário etc. não são necessários pra essa tela). */
+  review?: { id: string; rating: number; tags: string[] } | null
 }
 
 export interface BookingPayload {
@@ -144,13 +162,57 @@ export interface Review {
   tutor: User
   rating: number
   comment?: string
+  tags: string[]
   createdAt: string
 }
 
 export interface ReviewPayload {
   bookingId: string
+  petsitterId: string
   rating: number
   comment?: string
+  tags?: string[]
+}
+
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+export interface ChatMessage {
+  id: string
+  senderId: string | null
+  isSystem: boolean
+  content: string
+  createdAt: string
+  readAt: string | null
+}
+
+export interface ChatConversation {
+  bookingId: string
+  service: ServiceType
+  status: BookingStatus
+  /** Necessário pra calcular no cliente se o chat ainda está na janela de envio (mesma
+   * regra do backend: accepted, ou completed há menos de 48h). Null se nunca foi concluído. */
+  completedAt: string | null
+  otherUser: {
+    id: string
+    name: string
+    avatarUrl: string | null
+  }
+  lastMessage: {
+    content: string
+    createdAt: string
+    senderId: string | null
+    isSystem: boolean
+  } | null
+  unreadCount: number
+  updatedAt: string
+}
+
+// ─── Localização (check-in manual) ─────────────────────────────────────────────
+export interface LocationCheckIn {
+  id: string
+  bookingId: string
+  latitude: number
+  longitude: number
+  createdAt: string
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────

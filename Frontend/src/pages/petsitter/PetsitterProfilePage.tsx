@@ -5,10 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { petsitterService } from '@/services/petsitter.service'
 import { authService }      from '@/services/auth.service'
+import { userService }      from '@/services/user.service'
 import { useAuthStore }     from '@/store/auth.store'
 import { serviceLabels, avatarUrl } from '@/utils'
 import { IS_MOCK_MODE }     from '@/lib/mock'
-import { supabase } from '@/lib/supabase'
 import { Camera, Save, MapPin, Phone, DollarSign, AlertTriangle, User, Mail, Clock, ToggleLeft, ToggleRight, FileText } from 'lucide-react'
 import type { ServiceType } from '@/types'
 import toast from 'react-hot-toast'
@@ -43,13 +43,12 @@ const schema = z.object({
   services:     z.array(z.string()).min(1, 'Selecione ao menos 1 serviço'),
   acceptedSpecies: z.array(z.string()).min(1, 'Selecione ao menos 1 espécie'),
   isAvailable:  z.boolean(),
+  offersLocationSharing: z.boolean(),
   pricingConfig: z.record(z.object({
     type: z.enum(['fixed', 'per_hour']),
     price: z.coerce.number().min(1, 'Valor inválido')
   })).optional(),
   capacityPerDay: z.coerce.number().min(1, 'A capacidade deve ser no mínimo 1'),
-  identityProof: z.string().optional(),
-  addressProof: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
@@ -62,7 +61,7 @@ export function PetsitterProfilePage() {
   const { user, setUser } = useAuthStore()
   const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [activeTab, setActiveTab] = useState<'pessoal' | 'perfil' | 'agenda' | 'servicos' | 'documentos'>('pessoal')
   const [isUploading, setIsUploading] = useState(false)
   const [schedule, setSchedule] = useState<ScheduleConfig>(() =>
@@ -83,10 +82,9 @@ export function PetsitterProfilePage() {
       services: [] as string[],
       acceptedSpecies: [] as string[],
       isAvailable: true,
+      offersLocationSharing: false,
       pricingConfig: {},
       capacityPerDay: 1,
-      identityProof: '',
-      addressProof: '',
     },
   })
 
@@ -104,9 +102,8 @@ export function PetsitterProfilePage() {
         services:     ps.services    ?? [],
         acceptedSpecies: (ps as any).acceptedSpecies ?? [],
         isAvailable:  ps.isAvailable,
+        offersLocationSharing: ps.offersLocationSharing ?? false,
         capacityPerDay: ps.capacityPerDay ?? 1,
-        identityProof: ps.identityProof ?? '',
-        addressProof: ps.addressProof ?? '',
       })
       // Load scheduleConfig
       if (ps.scheduleConfig) {
@@ -126,27 +123,8 @@ export function PetsitterProfilePage() {
     mutationFn: async (data: FormData) => {
       const { name, email, phone, ...petsitterData } = data
 
-      // Se o avatarPreview for base64, fazemos o upload pro Supabase primeiro (usando o mesmo bucket de docs pra simplificar se não houver um 'avatars')
-      let avatarUrlToSave = avatarPreview ?? user?.avatar
-      if (avatarPreview && avatarPreview.startsWith('data:image')) {
-        try {
-          const fileExt = avatarPreview.split(';')[0].split('/')[1]
-          const fileName = `avatar-${user?.id}-${Date.now()}.${fileExt}`
-          const res = await fetch(avatarPreview)
-          const blob = await res.blob()
-
-          const { error } = await supabase.storage.from('petsitter-documents').upload(fileName, blob)
-          if (!error) {
-            const { data: { publicUrl } } = supabase.storage.from('petsitter-documents').getPublicUrl(fileName)
-            avatarUrlToSave = publicUrl
-          }
-        } catch (e) {
-          console.error('Erro ao fazer upload do avatar', e)
-        }
-      }
-
       return await Promise.all([
-        authService.updateProfile({ name, email, phone, avatar: avatarUrlToSave }),
+        authService.updateProfile({ name, email, phone }),
         petsitterService.updateProfile({
           ...petsitterData,
           services: petsitterData.services as ServiceType[],
@@ -160,7 +138,6 @@ export function PetsitterProfilePage() {
       setUser(updatedUser)
       queryClient.invalidateQueries({ queryKey: ['petsitter', 'me'] })
       toast.success('Perfil atualizado com sucesso! 🐾')
-      setAvatarPreview(null)
     },
     onError: () => toast.error('Erro ao salvar. Tente novamente.'),
   })
@@ -171,18 +148,27 @@ export function PetsitterProfilePage() {
     else if (formErrors.bio || formErrors.location || formErrors.city || formErrors.state) setActiveTab('perfil')
     else if (formErrors.capacityPerDay) setActiveTab('agenda')
     else if (formErrors.services || formErrors.acceptedSpecies || formErrors.pricingConfig) setActiveTab('servicos')
-    else if (formErrors.identityProof || formErrors.addressProof) setActiveTab('documentos')
-    
+
     toast.error('Preencha os campos obrigatórios corretamente.')
   }
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Avatar sobe direto pro backend assim que o arquivo é escolhido — não espera o "Salvar Perfil".
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) { toast.error('Imagem muito grande (máx 5MB)'); return }
-    const reader = new FileReader()
-    reader.onload = () => setAvatarPreview(reader.result as string)
-    reader.readAsDataURL(file)
+
+    try {
+      setIsUploadingAvatar(true)
+      const { avatarUrl: newAvatarUrl } = await userService.uploadAvatar(file)
+      setUser({ ...user!, avatarUrl: newAvatarUrl })
+      toast.success('Foto atualizada!')
+    } catch {
+      // Erro real já vira toast pelo interceptor de resposta do axios.
+    } finally {
+      setIsUploadingAvatar(false)
+      e.target.value = ''
+    }
   }
 
   const toggleDay = (day: string) => {
@@ -193,34 +179,32 @@ export function PetsitterProfilePage() {
     setSchedule(prev => ({ ...prev, [day]: { ...prev[day], [field]: value } }))
   }
 
-  const uploadDocument = async (field: 'identityProof' | 'addressProof', e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadDocument = async (field: 'identity-proof' | 'address-proof', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) { toast.error('Arquivo muito grande (máx 5MB)'); return }
 
     try {
       setIsUploading(true)
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user?.id}-${field}-${Date.now()}.${fileExt}`
-      
-      const { data, error } = await supabase.storage
-        .from('petsitter-documents')
-        .upload(fileName, file)
-
-      if (error) throw error
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('petsitter-documents')
-        .getPublicUrl(fileName)
-
-      // Atualiza o form
-      reset({ ...watch(), [field]: publicUrl })
-      toast.success('Documento enviado! Lembre-se de salvar o perfil no final.')
-    } catch (err: any) {
-      console.error(err)
-      toast.error('Erro ao enviar documento. Verifique se o bucket existe no Supabase.')
+      await petsitterService.uploadDocument(field, file)
+      queryClient.invalidateQueries({ queryKey: ['petsitter', 'me'] })
+      toast.success('Documento enviado com sucesso!')
+    } catch {
+      // Erro real (tipo/tamanho inválido etc.) já vira toast pelo interceptor de
+      // resposta do axios (lib/axios.ts) — evita duplicar a mensagem aqui.
     } finally {
       setIsUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  /** Busca a signed URL sob demanda (nunca embutida antes do clique — expiraria) e abre. */
+  const viewDocument = async (field: 'identity-proof' | 'address-proof') => {
+    try {
+      const { url } = await petsitterService.getMyDocumentUrl(field)
+      window.open(url, '_blank', 'noreferrer')
+    } catch {
+      toast.error('Não foi possível abrir o documento.')
     }
   }
 
@@ -233,7 +217,7 @@ export function PetsitterProfilePage() {
     </div>
   )
 
-  const displayAvatar = avatarPreview ?? avatarUrl(user.name, user.avatar)
+  const displayAvatar = avatarUrl(user.name, user.avatarUrl ?? undefined)
   const enabledDays = DAYS.filter(d => schedule[d]?.enabled)
 
   const TABS: { key: typeof activeTab; label: string; icon: string }[] = [
@@ -271,10 +255,12 @@ export function PetsitterProfilePage() {
         <div className="flex flex-col sm:flex-row items-center gap-5">
           <div className="relative flex-shrink-0">
             <img src={displayAvatar} alt={user.name} className="w-24 h-24 rounded-2xl object-cover ring-4 ring-primary-100 shadow-sm" />
-            <button onClick={() => fileRef.current?.click()} className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-md hover:bg-primary-600 transition-colors" title="Alterar foto">
-              <Camera size={14} />
+            <button onClick={() => fileRef.current?.click()} disabled={isUploadingAvatar} className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-md hover:bg-primary-600 transition-colors disabled:opacity-60" title="Alterar foto">
+              {isUploadingAvatar
+                ? <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                : <Camera size={14} />}
             </button>
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" disabled={isUploadingAvatar} onChange={handleAvatarChange} />
           </div>
           <div className="text-center sm:text-left flex-1">
             <h1 className="text-xl font-bold text-gray-900">{user.name}</h1>
@@ -352,6 +338,23 @@ export function PetsitterProfilePage() {
                   <div>
                     <p className="font-medium text-gray-800 text-sm">Disponível para novos agendamentos</p>
                     <p className="text-xs text-gray-500">{field.value ? 'Aparece nas buscas' : 'Oculto nas buscas'}</p>
+                  </div>
+                </div>
+              )} />
+            </div>
+            <div>
+              <Controller control={control} name="offersLocationSharing" render={({ field }) => (
+                <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
+                  <button type="button" onClick={() => field.onChange(!field.value)} className={clsx('transition-colors', field.value ? 'text-primary-500' : 'text-gray-400')}>
+                    {field.value ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                  </button>
+                  <div>
+                    <p className="font-medium text-gray-800 text-sm">Compartilha localização durante passeios</p>
+                    <p className="text-xs text-gray-500">
+                      {field.value
+                        ? 'Aparece no seu perfil público. Você compartilha check-ins manuais durante o serviço.'
+                        : 'Oculto no seu perfil público'}
+                    </p>
                   </div>
                 </div>
               )} />
@@ -523,16 +526,24 @@ export function PetsitterProfilePage() {
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <label className="block text-sm font-medium text-gray-800 mb-1">Documento de Identidade (RG ou CNH)</label>
                 <div className="flex flex-col gap-2">
-                  <input type="file" accept="image/*,.pdf" onChange={(e) => uploadDocument('identityProof', e)} disabled={isUploading} className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
-                  {watch('identityProof') && <a href={watch('identityProof')} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline mt-1 block">Ver documento enviado</a>}
+                  <input type="file" accept="image/*,.pdf" onChange={(e) => uploadDocument('identity-proof', e)} disabled={isUploading} className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
+                  {ps?.identityProof && (
+                    <button type="button" onClick={() => viewDocument('identity-proof')} className="text-xs text-primary-600 hover:underline mt-1 block text-left">
+                      Ver documento enviado
+                    </button>
+                  )}
                 </div>
               </div>
 
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <label className="block text-sm font-medium text-gray-800 mb-1">Comprovante de Residência</label>
                 <div className="flex flex-col gap-2">
-                  <input type="file" accept="image/*,.pdf" onChange={(e) => uploadDocument('addressProof', e)} disabled={isUploading} className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
-                  {watch('addressProof') && <a href={watch('addressProof')} target="_blank" rel="noreferrer" className="text-xs text-primary-600 hover:underline mt-1 block">Ver documento enviado</a>}
+                  <input type="file" accept="image/*,.pdf" onChange={(e) => uploadDocument('address-proof', e)} disabled={isUploading} className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
+                  {ps?.addressProof && (
+                    <button type="button" onClick={() => viewDocument('address-proof')} className="text-xs text-primary-600 hover:underline mt-1 block text-left">
+                      Ver documento enviado
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -55,6 +55,11 @@ export class CreatePetsitterProfileDto {
   @IsBoolean()
   isAvailable?: boolean;
 
+  @ApiPropertyOptional({ description: 'Indica se o petsitter compartilha localização (check-in manual) durante os serviços' })
+  @IsOptional()
+  @IsBoolean()
+  offersLocationSharing?: boolean;
+
   @ApiPropertyOptional({
     description: 'Configuração de agenda por dia: { "Segunda": { "enabled": true, "start": "08:00", "end": "17:00" } }',
   })
@@ -78,16 +83,6 @@ export class CreatePetsitterProfileDto {
   @IsArray()
   @IsUrl({}, { each: true, message: 'As fotos devem ser URLs válidas' })
   photos?: string[];
-
-  @ApiPropertyOptional({ description: 'URL do documento de identidade (via Supabase Storage)' })
-  @IsOptional()
-  @IsString()
-  identityProof?: string;
-
-  @ApiPropertyOptional({ description: 'URL do comprovante de residência (via Supabase Storage)' })
-  @IsOptional()
-  @IsString()
-  addressProof?: string;
 
   @ApiProperty({
     enum: PetSpecies,

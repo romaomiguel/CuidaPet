@@ -6,10 +6,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class BookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly chatService: ChatService,
+  ) {}
 
   async create(tutorId: string, createBookingDto: CreateBookingDto) {
     const { petsitterId, petIds, startDate, endDate, service, notes } =
@@ -95,17 +99,33 @@ export class BookingsService {
   }
 
   async findAll(userId: string, role: string) {
-    if (role === 'tutor') {
-      return this.prisma.booking.findMany({
-        where: { tutorId: userId },
-        include: { petsitter: { select: { name: true } }, pets: true },
-      });
-    } else {
-      return this.prisma.booking.findMany({
-        where: { petsitterId: userId },
-        include: { tutor: { select: { name: true } }, pets: true },
-      });
-    }
+    const bookings =
+      role === 'tutor'
+        ? await this.prisma.booking.findMany({
+            where: { tutorId: userId },
+            include: {
+              petsitter: { select: { name: true } },
+              pets: true,
+              // Só id/rating/tags — o front usa isso pra saber se já foi avaliado e
+              // mostrar a nota/tags; comentário/tutorId/etc não são necessários aqui.
+              reviews: { select: { id: true, rating: true, tags: true } },
+            },
+          })
+        : await this.prisma.booking.findMany({
+            where: { petsitterId: userId },
+            include: {
+              tutor: { select: { name: true } },
+              pets: true,
+              reviews: { select: { id: true, rating: true, tags: true } },
+            },
+          });
+
+    // @@unique([bookingId, tutorId]) no schema garante no máximo 1 review por
+    // booking — expõe como campo singular (`review`) em vez do array `reviews`.
+    return bookings.map(({ reviews, ...booking }) => ({
+      ...booking,
+      review: reviews[0] ?? null,
+    }));
   }
 
   async getBusySlots(profileId: string) {
@@ -198,9 +218,24 @@ export class BookingsService {
         );
     }
 
-    return this.prisma.booking.update({
+    // acceptedAt marca "a conversa do chat existe" (permanece mesmo se cancelado depois);
+    // completedAt é a base da janela de 48h de envio de mensagem.
+    const updated = await this.prisma.booking.update({
       where: { id: bookingId },
-      data: { status },
+      data: {
+        status,
+        ...(status === 'accepted' && { acceptedAt: new Date() }),
+        ...(status === 'completed' && { completedAt: new Date() }),
+      },
     });
+
+    if (status === 'accepted') {
+      await this.chatService.createSystemMessage(
+        bookingId,
+        'Conversa iniciada. Combinem os detalhes do serviço.',
+      );
+    }
+
+    return updated;
   }
 }

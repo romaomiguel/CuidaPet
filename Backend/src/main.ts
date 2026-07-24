@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
@@ -12,6 +13,7 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+  app.use(cookieParser()); // necessário pra ler o cookie httpOnly do refresh token
 
   // CORS: lê origens permitidas da variável de ambiente CORS_ORIGIN
   // Em produção, defina: CORS_ORIGIN=https://seudominio.com

@@ -1,30 +1,46 @@
 import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
+import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 import { PetsittersModule } from './petsitters/petsitters.module';
 import { AuthModule } from './auth/auth.module';
 import { PetsModule } from './pets/pets.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { ChatModule } from './chat/chat.module';
+import { LocationCheckInsModule } from './location-checkins/location-checkins.module';
 
 @Module({
   imports: [
+    // Limite GLOBAL, generoso o bastante pra navegação normal (várias chamadas por
+    // página: listagens, perfil, buscas). Rotas mais sensíveis (auth, uploads, match)
+    // sobrescrevem esse valor via @Throttle({ default: {...} }) nos próprios controllers.
     ThrottlerModule.forRoot([{
+      name: 'default',
       ttl: 60000,
-      limit: 10,
+      limit: 100,
     }]),
     PrismaModule,
+    StorageModule,
     UsersModule,
     PetsittersModule,
     AuthModule,
     PetsModule,
     BookingsModule,
     ReviewsModule,
+    ChatModule,
+    LocationCheckInsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Guard global — sem isso, ThrottlerModule.forRoot só registra a config, não aplica
+    // em nenhuma rota. Antes só o AuthController tinha throttling (via @UseGuards local).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

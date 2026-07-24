@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   MapPin, Star, Clock, Shield, ChevronLeft,
-  Calendar, MessageCircle, CheckCircle2,
+  Calendar, MessageCircle, CheckCircle2, Navigation,
 } from 'lucide-react'
 import { petsitterService } from '@/services/petsitter.service'
 import { reviewService }    from '@/services/review.service'
@@ -29,11 +29,13 @@ export function PetsitterDetailPage() {
     enabled:  !!id,
   })
 
-  // Reviews — usa mock automaticamente se API offline
+  // GET /reviews/petsitter/:petsitterId espera o User.id do petsitter, não o
+  // PetsitterProfile.id (que é o `id` da URL/rota) — por isso depende de `ps.userId`,
+  // carregado pela query acima, em vez do `id` da rota diretamente.
   const { data: reviews = [] } = useQuery({
-    queryKey: ['reviews', id],
-    queryFn:  () => reviewService.listByPetsitter(id!),
-    enabled:  !!id,
+    queryKey: ['reviews', ps?.userId],
+    queryFn:  () => reviewService.listByPetsitter(ps!.userId),
+    enabled:  !!ps?.userId,
     // Não falha a página se reviews falharem
     retry: false,
   })
@@ -84,7 +86,7 @@ export function PetsitterDetailPage() {
       <div className="relative h-60 sm:h-72 bg-gradient-to-br from-primary-700 via-primary-500 to-primary-400">
         {/* Imagem de cover (avatar como fallback) */}
         <img
-          src={ps.photos?.[0] ?? avatarUrl(ps.user.name, ps.user.avatar)}
+          src={ps.photos?.[0] ?? avatarUrl(ps.user.name, ps.user.avatarUrl ?? undefined)}
           alt={ps.user.name}
           className="absolute inset-0 w-full h-full object-cover opacity-40"
         />
@@ -118,7 +120,7 @@ export function PetsitterDetailPage() {
             {/* Card do petsitter — aparece sobre o hero */}
             <div className="bg-white rounded-2xl shadow-card-hover p-5 mb-5 flex items-start gap-4">
               <img
-                src={avatarUrl(ps.user.name, ps.user.avatar)}
+                src={avatarUrl(ps.user.name, ps.user.avatarUrl ?? undefined)}
                 alt={ps.user.name}
                 className="w-20 h-20 rounded-2xl object-cover flex-shrink-0 ring-4 ring-white shadow-md"
               />
@@ -152,6 +154,12 @@ export function PetsitterDetailPage() {
                     <Clock size={12} /> Responde em menos de 1h
                   </div>
                 </div>
+
+                {ps.offersLocationSharing && (
+                  <div className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-100 rounded-full px-2.5 py-1 mt-2.5">
+                    <Navigation size={11} /> Compartilha localização durante passeios
+                  </div>
+                )}
               </div>
             </div>
 
@@ -281,6 +289,13 @@ export function PetsitterDetailPage() {
                           </div>
                         </div>
                         <RatingStars value={r.rating} size="sm" className="mb-1.5" />
+                        {r.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mb-1.5">
+                            {r.tags.map(tag => (
+                              <span key={tag} className="badge badge-blue">{tag}</span>
+                            ))}
+                          </div>
+                        )}
                         {r.comment && (
                           <p className="text-sm text-gray-600 leading-relaxed">{r.comment}</p>
                         )}
@@ -312,6 +327,9 @@ export function PetsitterDetailPage() {
                   { icon: <Star size={15} className="text-secondary-500 fill-secondary-500" />, text: `${avgRating.toFixed(1)} (${ps.totalReviews} avaliações)` },
                   { icon: <Shield size={15} className="text-green-500" />,                      text: 'Petsitter verificado'                                     },
                   { icon: <Clock size={15} className="text-primary-400" />,                     text: 'Responde em menos de 1h'                                  },
+                  ...(ps.offersLocationSharing
+                    ? [{ icon: <Navigation size={15} className="text-primary-500" />, text: 'Compartilha localização durante passeios' }]
+                    : []),
                 ].map(({ icon, text }) => (
                   <div key={text} className="flex items-center gap-2">
                     {icon}<span>{text}</span>

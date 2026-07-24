@@ -1,4 +1,4 @@
-import api from '@/lib/axios'
+import api, { refreshAccessToken, csrfHeaders } from '@/lib/axios'
 import { useAuthStore } from '@/store/auth.store'
 import type { AuthResponse, LoginPayload, RegisterPayload, User } from '@/types'
 
@@ -10,25 +10,28 @@ export const authService = {
   },
 
   async register(payload: RegisterPayload): Promise<AuthResponse> {
-    // Cria o usuário
-    await api.post<User>('/auth/register', payload)
-    // Faz login automático para obter o token
-    const { data } = await api.post<AuthResponse>('/auth/login', {
-      email: payload.email,
-      password: payload.password,
-    })
+    // Backend agora cria o usuário e já devolve os tokens numa chamada só.
+    const { data } = await api.post<AuthResponse>('/auth/register', payload)
     useAuthStore.getState().setToken(data.access_token)
     return data
   },
 
   async logout(): Promise<void> {
     try {
-      await api.post('/auth/logout')
-    } catch {
-      // logout no servidor é opcional
+      await api.post('/auth/logout', undefined, { headers: csrfHeaders() })
+    } catch (err) {
+      // Revogação no servidor falhou (refresh token pode continuar válido no banco) — ainda
+      // assim limpamos o estado local pra não travar o usuário numa UI presa. Logamos pra
+      // não mascarar silenciosamente uma sessão que não foi revogada de verdade.
+      console.error('[auth] Falha ao revogar sessão no servidor durante logout:', err)
     } finally {
       useAuthStore.getState().setToken(null)
     }
+  },
+
+  /** Usado no boot da app (main.tsx) e pelo interceptor de 401 em lib/axios.ts. */
+  async refresh(timeoutMs?: number): Promise<string> {
+    return refreshAccessToken(timeoutMs)
   },
 
   async me(): Promise<User> {

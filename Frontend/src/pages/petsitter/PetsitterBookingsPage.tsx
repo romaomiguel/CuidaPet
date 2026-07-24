@@ -1,12 +1,39 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { bookingService } from '@/services/booking.service'
+import { locationService } from '@/services/location.service'
 import { SkeletonList } from '@/components/ui/Skeleton'
 import { formatCurrency, bookingStatusConfig, serviceLabels, avatarUrl } from '@/utils'
-import { Check, X, CheckCheck, Calendar, Clock, ChevronDown } from 'lucide-react'
+import { Check, X, CheckCheck, Calendar, Clock, ChevronDown, MapPin } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import type { BookingStatus } from '@/types'
+
+function getCurrentPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Seu navegador não suporta compartilhamento de localização.'))
+      return
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+    })
+  })
+}
+
+// GeolocationPositionError não é um Error nativo — mapeia o `code` pra uma mensagem
+// que o petsitter entenda (permissão negada é o caso mais comum).
+function geolocationErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  const geoError = error as GeolocationPositionError
+  switch (geoError.code) {
+    case 1: return 'Permissão de localização negada. Ative o acesso à localização nas configurações do navegador.'
+    case 2: return 'Não foi possível obter sua localização. Verifique se o GPS está ativado e tente novamente.'
+    case 3: return 'Tempo esgotado ao tentar obter sua localização. Tente novamente.'
+    default: return 'Não foi possível compartilhar sua localização.'
+  }
+}
 
 type Filter = 'todos' | 'pending' | 'accepted' | 'completed' | 'cancelled'
 
@@ -29,6 +56,15 @@ export function PetsitterBookingsPage() {
   const accept   = useMutation({ mutationFn: bookingService.accept,   onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bookings'] }); toast.success('Agendamento aceito! 🎉') } })
   const decline  = useMutation({ mutationFn: bookingService.decline,  onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bookings'] }); toast.success('Agendamento recusado') } })
   const complete = useMutation({ mutationFn: bookingService.complete, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['bookings'] }); toast.success('Serviço concluído! ✅') } })
+
+  const checkIn = useMutation({
+    mutationFn: async (bookingId: string) => {
+      const position = await getCurrentPosition()
+      return locationService.sendCheckIn(bookingId, position.coords.latitude, position.coords.longitude)
+    },
+    onSuccess: () => toast.success('Localização compartilhada!'),
+    onError: (error) => toast.error(geolocationErrorMessage(error)),
+  })
 
   const filtered = filter === 'todos' ? bookings : bookings.filter(b => b.status === filter)
   const sorted = [...filtered].sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
@@ -113,7 +149,7 @@ export function PetsitterBookingsPage() {
                 {/* Avatar + info do tutor */}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <img
-                    src={avatarUrl(b.tutor?.name ?? 'T', b.tutor?.avatar)}
+                    src={avatarUrl(b.tutor?.name ?? 'T', b.tutor?.avatarUrl ?? undefined)}
                     alt={b.tutor?.name}
                     className="w-11 h-11 rounded-xl object-cover flex-shrink-0 ring-2 ring-gray-100"
                   />
@@ -187,14 +223,26 @@ export function PetsitterBookingsPage() {
                 </div>
               )}
               {b.status === 'accepted' && (
-                <div className="flex justify-end mt-4 pt-3 border-t border-gray-100">
-                  <button
-                    onClick={() => complete.mutate(b.id)}
-                    disabled={complete.isPending}
-                    className="btn-primary text-sm bg-emerald-500 hover:bg-emerald-600 border-emerald-500"
-                  >
-                    <CheckCheck size={14} /> Marcar como concluído
-                  </button>
+                <div className="mt-4 pt-3 border-t border-gray-100 space-y-2">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => checkIn.mutate(b.id)}
+                      disabled={checkIn.isPending}
+                      className="btn-ghost text-primary-600 hover:bg-primary-50 text-sm"
+                    >
+                      <MapPin size={14} /> {checkIn.isPending ? 'Compartilhando…' : 'Compartilhar localização agora'}
+                    </button>
+                    <button
+                      onClick={() => complete.mutate(b.id)}
+                      disabled={complete.isPending}
+                      className="btn-primary text-sm bg-emerald-500 hover:bg-emerald-600 border-emerald-500"
+                    >
+                      <CheckCheck size={14} /> Marcar como concluído
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 text-right">
+                    Cada check-in fica salvo no histórico do tutor, mesmo depois do serviço terminar.
+                  </p>
                 </div>
               )}
             </div>

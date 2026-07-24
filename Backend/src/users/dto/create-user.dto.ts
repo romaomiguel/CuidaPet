@@ -6,7 +6,6 @@ import {
   IsString,
   MinLength,
   Matches,
-  IsUrl,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
@@ -42,11 +41,6 @@ export class CreateUserDto {
     message: 'O CPF deve estar no formato XXX.XXX.XXX-XX',
   })
   cpf?: string;
-
-  @ApiPropertyOptional({ description: 'URL do avatar do usuário' })
-  @IsOptional()
-  @IsUrl({}, { message: 'O avatar deve ser uma URL válida' })
-  avatar?: string;
 
   @ApiProperty({
     enum: Role,

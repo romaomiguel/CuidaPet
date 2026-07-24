@@ -6,13 +6,42 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService, AVATAR_SIGNED_URL_TTL_SECONDS } from '../storage/storage.service';
 import { CreatePetsitterProfileDto } from './dto/create-petsitter-profile.dto';
 import { UpdatePetsitterProfileDto } from './dto/update-petsitter-profile.dto';
+import { PetsitterStatus } from './dto/update-petsitter-status.dto';
 import { MatchPetsittersDto } from './dto/match-petsitters.dto';
 
 @Injectable()
 export class PetsittersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
+
+  /** `user.avatar` guarda um path do Storage (não uma URL) — troca por signed URL só na saída. */
+  private async withAvatarUrl<T extends { user: { avatar: string | null } }>(
+    profile: T,
+  ): Promise<T & { user: T['user'] & { avatarUrl: string | null } }> {
+    const avatarUrl = await this.storageService.createAvatarUrl(
+      profile.user.avatar,
+      AVATAR_SIGNED_URL_TTL_SECONDS,
+    );
+    return { ...profile, user: { ...profile.user, avatarUrl } };
+  }
+
+  /** Versão em lote de `withAvatarUrl`, pra listagens — 1 chamada ao Storage em vez de N. */
+  private async withAvatarUrls<T extends { user: { avatar: string | null } }>(
+    profiles: T[],
+  ): Promise<(T & { user: T['user'] & { avatarUrl: string | null } })[]> {
+    const paths = profiles.map((p) => p.user.avatar).filter((p): p is string => Boolean(p));
+    const urlMap = await this.storageService.createAvatarUrls(paths, AVATAR_SIGNED_URL_TTL_SECONDS);
+
+    return profiles.map((profile) => ({
+      ...profile,
+      user: { ...profile.user, avatarUrl: profile.user.avatar ? urlMap.get(profile.user.avatar) ?? null : null },
+    }));
+  }
 
   async create(userId: string, createPetsitterProfileDto: CreatePetsitterProfileDto) {
     const user = await this.prisma.user.findUnique({
@@ -74,17 +103,13 @@ export class PetsittersService {
         where,
         skip,
         take: limit,
-        include: {
-          user: {
-            select: { name: true, avatar: true },
-          },
-        },
+        select: this.publicProfileSelect(),
       }),
       this.prisma.petsitterProfile.count({ where }),
     ]);
 
     return {
-      data,
+      data: await this.withAvatarUrls(data),
       total,
       page,
       pageSize: limit,
@@ -105,9 +130,7 @@ export class PetsittersService {
         services: { has: service },
         acceptedSpecies: { has: species },
       },
-      include: {
-        user: { select: { name: true, avatar: true } },
-      },
+      select: this.publicProfileSelect(),
     });
 
     // Mapa do dia da semana em PT-BR para checar scheduleConfig
@@ -235,26 +258,120 @@ export class PetsittersService {
       };
     });
 
-    return scoredMatches
+    const top15 = scoredMatches
       .sort((a, b) => b.matchScore - a.matchScore)
       .slice(0, 15); // Máximo 15 resultados
+
+    return this.withAvatarUrls(top15);
   }
 
   async findOne(id: string) {
     const profile = await this.prisma.petsitterProfile.findUnique({
       where: { id },
-      include: {
-        user: {
-          select: { name: true, email: true, phone: true, avatar: true },
-        },
-      },
+      select: this.publicProfileSelect(),
     });
 
     if (!profile) {
       throw new NotFoundException('Perfil de petsitter não encontrado.');
     }
 
-    return profile;
+    return this.withAvatarUrl(profile);
+  }
+
+  /**
+   * Shape usado nas rotas PÚBLICAS (sem guard): findAll, findOne, findMatches.
+   * Exclui identityProof/addressProof (documentos sensíveis) e email/phone do
+   * usuário (não usados em nenhuma tela pública hoje) — essas rotas são
+   * acessíveis por qualquer request anônimo, então nunca devem devolver dado
+   * sensível. Rotas autenticadas (findByUserId/"me") continuam com seu próprio
+   * include, sem essa restrição.
+   */
+  private publicProfileSelect() {
+    return {
+      id: true,
+      userId: true,
+      bio: true,
+      services: true,
+      pricePerHour: true,
+      location: true,
+      city: true,
+      state: true,
+      rating: true,
+      totalReviews: true,
+      scheduleConfig: true,
+      isAvailable: true,
+      photos: true,
+      pricingConfig: true,
+      capacityPerDay: true,
+      status: true,
+      acceptedSpecies: true,
+      user: { select: { name: true, avatar: true } },
+    } as const;
+  }
+
+  /**
+   * Shape usado SÓ pela listagem admin (`GET /petsitters/admin/list`, `@Roles('admin')`).
+   * Precisa saber SE existe documento pra mostrar o botão de revisão — mas não expõe o
+   * path em si na listagem (só quando o admin clica, via `getDocumentPath` + signed URL).
+   * `identityProof`/`addressProof` brutos são lidos aqui só pra computar o booleano, e
+   * removidos antes do retorno em `findAllForAdmin` (nunca saem deste service).
+   */
+  private adminProfileSelect() {
+    return {
+      id: true,
+      userId: true,
+      bio: true,
+      services: true,
+      pricePerHour: true,
+      location: true,
+      city: true,
+      state: true,
+      rating: true,
+      totalReviews: true,
+      isAvailable: true,
+      capacityPerDay: true,
+      status: true,
+      acceptedSpecies: true,
+      identityProof: true,
+      addressProof: true,
+      user: { select: { name: true, email: true, phone: true, avatar: true } },
+    } as const;
+  }
+
+  /** Listagem para o painel admin — com indicador de documento, sem reusar a rota pública. */
+  async findAllForAdmin(
+    filters: { city?: string; status?: string; page?: number; limit?: number } = {},
+  ) {
+    const { city, status, page = 1, limit = 20 } = filters;
+
+    const where: any = {};
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+    if (city) {
+      where.city = { contains: city, mode: 'insensitive' };
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [rows, total] = await Promise.all([
+      this.prisma.petsitterProfile.findMany({
+        where,
+        skip,
+        take: limit,
+        select: this.adminProfileSelect(),
+      }),
+      this.prisma.petsitterProfile.count({ where }),
+    ]);
+
+    const withAvatars = await this.withAvatarUrls(rows);
+    const data = withAvatars.map(({ identityProof, addressProof, ...rest }) => ({
+      ...rest,
+      hasIdentityProof: Boolean(identityProof),
+      hasAddressProof: Boolean(addressProof),
+    }));
+
+    return { data, total, page, pageSize: limit, totalPages: Math.ceil(total / limit) };
   }
 
   async findByUserId(userId: string) {
@@ -269,7 +386,7 @@ export class PetsittersService {
 
     if (!profile) {
       // Create empty profile if it doesn't exist for a petsitter
-      return this.prisma.petsitterProfile.create({
+      const created = await this.prisma.petsitterProfile.create({
         data: {
           userId,
           bio: '',
@@ -288,9 +405,47 @@ export class PetsittersService {
           },
         },
       });
+      return this.withAvatarUrl(created);
     }
 
-    return profile;
+    return this.withAvatarUrl(profile);
+  }
+
+  /**
+   * Grava só o path do documento no Storage. Chamado exclusivamente pelos endpoints
+   * de upload (`POST /petsitters/me/identity-proof|address-proof`) — nunca a partir
+   * de um DTO de PATCH solto, já que esses campos não são mais aceitos via JSON.
+   */
+  async updateDocumentPath(
+    userId: string,
+    field: 'identityProof' | 'addressProof',
+    path: string,
+  ) {
+    return this.prisma.petsitterProfile.update({
+      where: { userId },
+      data: field === 'identityProof' ? { identityProof: path } : { addressProof: path },
+      select: { id: true, userId: true, identityProof: true, addressProof: true },
+    });
+  }
+
+  /** Path armazenado de um documento, por id do perfil — usado pelos endpoints de leitura. */
+  async getDocumentPath(
+    profileId: string,
+    field: 'identityProof' | 'addressProof',
+  ): Promise<{ userId: string; path: string | null }> {
+    const profile = await this.prisma.petsitterProfile.findUnique({
+      where: { id: profileId },
+      select: { userId: true, identityProof: true, addressProof: true },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Perfil de petsitter não encontrado.');
+    }
+
+    return {
+      userId: profile.userId,
+      path: field === 'identityProof' ? profile.identityProof : profile.addressProof,
+    };
   }
 
   async update(
@@ -324,12 +479,11 @@ export class PetsittersService {
           ? (updatePetsitterProfileDto.scheduleConfig as Prisma.InputJsonObject)
           : undefined,
         isAvailable: updatePetsitterProfileDto.isAvailable,
+        offersLocationSharing: updatePetsitterProfileDto.offersLocationSharing,
         pricingConfig: updatePetsitterProfileDto.pricingConfig
           ? (updatePetsitterProfileDto.pricingConfig as Prisma.InputJsonObject)
           : undefined,
         capacityPerDay: updatePetsitterProfileDto.capacityPerDay,
-        identityProof: updatePetsitterProfileDto.identityProof,
-        addressProof: updatePetsitterProfileDto.addressProof,
         acceptedSpecies: updatePetsitterProfileDto.acceptedSpecies,
       },
     });
@@ -350,10 +504,9 @@ export class PetsittersService {
         services: updatePetsitterProfileDto.services ?? [],
         scheduleConfig: (updatePetsitterProfileDto.scheduleConfig ?? {}) as Prisma.InputJsonObject,
         isAvailable: updatePetsitterProfileDto.isAvailable ?? true,
+        offersLocationSharing: updatePetsitterProfileDto.offersLocationSharing ?? false,
         pricingConfig: (updatePetsitterProfileDto.pricingConfig ?? {}) as Prisma.InputJsonObject,
         capacityPerDay: updatePetsitterProfileDto.capacityPerDay ?? 1,
-        identityProof: updatePetsitterProfileDto.identityProof,
-        addressProof: updatePetsitterProfileDto.addressProof,
         acceptedSpecies: updatePetsitterProfileDto.acceptedSpecies ?? [],
       },
       create: {
@@ -366,10 +519,9 @@ export class PetsittersService {
         services: updatePetsitterProfileDto.services ?? [],
         scheduleConfig: (updatePetsitterProfileDto.scheduleConfig ?? {}) as Prisma.InputJsonObject,
         isAvailable: updatePetsitterProfileDto.isAvailable ?? true,
+        offersLocationSharing: updatePetsitterProfileDto.offersLocationSharing ?? false,
         pricingConfig: (updatePetsitterProfileDto.pricingConfig ?? {}) as Prisma.InputJsonObject,
         capacityPerDay: updatePetsitterProfileDto.capacityPerDay ?? 1,
-        identityProof: updatePetsitterProfileDto.identityProof,
-        addressProof: updatePetsitterProfileDto.addressProof,
         acceptedSpecies: updatePetsitterProfileDto.acceptedSpecies ?? [],
       },
     });
@@ -384,7 +536,7 @@ export class PetsittersService {
     return records.map(r => r.city);
   }
 
-  async changeStatus(id: string, status: string) {
+  async changeStatus(id: string, status: PetsitterStatus) {
     const profile = await this.prisma.petsitterProfile.findUnique({
       where: { id },
     });

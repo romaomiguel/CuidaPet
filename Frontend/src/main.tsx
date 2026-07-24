@@ -11,28 +11,21 @@ import { useAuthStore } from './store/auth.store'
 import './index.css'
 
 // ─── Session check ao iniciar o app ──────────────────────────────────────────
+// Não dá pra checar client-side se existe sessão: o refresh token vive num cookie
+// httpOnly, invisível ao JS. Por isso SEMPRE tentamos renovar uma vez no boot — sucesso
+// significa "havia uma sessão válida", falha (401) significa "não estava logado".
+// Timeout maior que o padrão do axios: no Render free tier o backend hiberna, e a
+// primeira requisição pós-hibernação pode demorar bem mais que os 15s normais.
+const BOOT_REFRESH_TIMEOUT_MS = 45000
+
 function SessionInit() {
   const { setUser, setLoading } = useAuthStore()
 
   useEffect(() => {
-    // Verifica se existe token salvo antes de chamar /auth/me
-    let hasToken = false
-    try {
-      const raw = sessionStorage.getItem('cuidapet-auth')
-      if (raw) {
-        const parsed = JSON.parse(raw)
-        hasToken = !!parsed?.state?.token
-      }
-    } catch { /* ignora */ }
-
-    if (!hasToken) {
-      setLoading(false)
-      return
-    }
-
     setLoading(true)
     authService
-      .me()
+      .refresh(BOOT_REFRESH_TIMEOUT_MS)
+      .then(() => authService.me())
       .then(user => setUser(user))
       .catch(() => useAuthStore.getState().logout())
   // eslint-disable-next-line react-hooks/exhaustive-deps

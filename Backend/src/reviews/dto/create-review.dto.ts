@@ -6,6 +6,8 @@ import {
   Max,
   IsOptional,
   MaxLength,
+  IsArray,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -31,4 +33,11 @@ export class CreateReviewDto {
   @IsString()
   @MaxLength(500, { message: 'O comentário não pode ter mais de 500 caracteres' })
   comment?: string;
+
+  @ApiPropertyOptional({ description: 'Tags fixas selecionadas (conjunto fechado por nota)', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  tags?: string[];
 }

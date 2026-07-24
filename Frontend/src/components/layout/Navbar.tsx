@@ -93,7 +93,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
               aria-expanded={dropdownOpen}
             >
               <img
-                src={avatarUrl(user.name, user.avatar)}
+                src={avatarUrl(user.name, user.avatarUrl ?? undefined)}
                 alt={user.name}
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-200"
               />

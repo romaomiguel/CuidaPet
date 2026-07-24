@@ -1,14 +1,20 @@
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { bookingService } from '@/services/booking.service'
 import { SkeletonList }   from '@/components/ui/Skeleton'
+import { RatingStars }    from '@/components/ui/RatingStars'
+import { ReviewModal }    from '@/components/booking/ReviewModal'
+import { LocationTrailMap } from '@/components/location/LocationTrailMap'
 import { formatCurrency, formatDateShort, bookingStatusConfig, serviceLabels, avatarUrl } from '@/utils'
-import { CalendarDays, AlertCircle, X } from 'lucide-react'
+import { CalendarDays, AlertCircle, X, Star, MapPin } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
-import type { BookingStatus } from '@/types'
+import type { Booking, BookingStatus } from '@/types'
 
 export function BookingsPage() {
   const queryClient = useQueryClient()
+  const [reviewTarget, setReviewTarget] = useState<Booking | null>(null)
+  const [trailTarget, setTrailTarget] = useState<string | null>(null)
   const { data, isLoading, isError } = useQuery({
     queryKey: ['bookings'],
     queryFn:  bookingService.list,
@@ -58,7 +64,7 @@ export function BookingsPage() {
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex items-center gap-3">
                   <img
-                    src={avatarUrl(b.petsitter?.user?.name ?? 'P', b.petsitter?.user?.avatar)}
+                    src={avatarUrl(b.petsitter?.user?.name ?? 'P', b.petsitter?.user?.avatarUrl ?? undefined)}
                     alt={b.petsitter?.user?.name}
                     className="w-11 h-11 rounded-xl object-cover"
                   />
@@ -89,6 +95,17 @@ export function BookingsPage() {
                 </div>
               </div>
 
+              {(b.status === 'accepted' || b.status === 'completed') && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => setTrailTarget(b.id)}
+                    className="btn-ghost text-primary-600 hover:bg-primary-50 text-sm"
+                  >
+                    <MapPin size={14} /> Ver trajeto
+                  </button>
+                </div>
+              )}
+
               {b.status === 'pending' && (
                 <div className="mt-4 flex justify-end">
                   <button
@@ -100,10 +117,55 @@ export function BookingsPage() {
                   </button>
                 </div>
               )}
+
+              {b.status === 'completed' && (
+                <div className="mt-4 flex justify-end">
+                  {b.review ? (
+                    <div className="flex flex-col items-end gap-1.5 text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <span>Você avaliou:</span>
+                        <RatingStars value={b.review.rating} size="sm" />
+                      </div>
+                      {b.review.tags.length > 0 && (
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          {b.review.tags.map(tag => (
+                            <span key={tag} className="badge badge-blue">{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setReviewTarget(b)}
+                      className="btn-primary text-sm py-2"
+                    >
+                      <Star size={14} /> Avaliar
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}
       </div>
+
+      {trailTarget && (
+        <LocationTrailMap
+          isOpen
+          onClose={() => setTrailTarget(null)}
+          bookingId={trailTarget}
+        />
+      )}
+
+      {reviewTarget && (
+        <ReviewModal
+          isOpen
+          onClose={() => setReviewTarget(null)}
+          bookingId={reviewTarget.id}
+          petsitterId={reviewTarget.petsitterId}
+          petsitterName={reviewTarget.petsitter?.user?.name ?? 'o petsitter'}
+        />
+      )}
     </div>
   )
 }

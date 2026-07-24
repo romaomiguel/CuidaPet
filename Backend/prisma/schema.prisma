@@ -59,6 +59,9 @@ model User {
 
   reviewsGiven    Review[] @relation("TutorReviews")
   reviewsReceived Review[] @relation("PetsitterReviews")
+
+  refreshTokens RefreshToken[]
+  chatMessages  ChatMessage[]
 }
 
 model PetsitterProfile {
@@ -82,6 +85,7 @@ model PetsitterProfile {
   identityProof  String?
   addressProof   String?
   acceptedSpecies PetSpecies[]
+  offersLocationSharing Boolean @default(false)
 }
 
 model Pet {
@@ -111,11 +115,15 @@ model Booking {
   startDate   DateTime
   endDate     DateTime
   status      BookingStatus @default(pending)
+  acceptedAt  DateTime?
+  completedAt DateTime?
   totalPrice  Float
   notes       String?
   createdAt   DateTime      @default(now())
 
-  reviews Review[]
+  reviews      Review[]
+  chatMessages ChatMessage[]
+  locationCheckIns LocationCheckIn[]
 }
 
 model Review {
@@ -128,7 +136,46 @@ model Review {
   petsitter   User     @relation("PetsitterReviews", fields: [petsitterId], references: [id], onDelete: Cascade)
   rating      Int
   comment     String?
+  tags        String[] @default([])
   createdAt   DateTime @default(now())
 
   @@unique([bookingId, tutorId])
+}
+
+model ChatMessage {
+  id        String    @id @default(uuid())
+  bookingId String
+  booking   Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  // Nulo = mensagem de sistema (ex: aviso automático de "conversa iniciada" no aceite).
+  senderId  String?
+  sender    User?     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([bookingId, createdAt])
+}
+
+model LocationCheckIn {
+  id        String   @id @default(uuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+
+  @@index([bookingId, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

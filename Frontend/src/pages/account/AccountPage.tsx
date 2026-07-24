@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { authService } from '@/services/auth.service'
 import { petService }  from '@/services/pet.service'
+import { userService } from '@/services/user.service'
 import { useAuthStore } from '@/store/auth.store'
 import { IS_MOCK_MODE } from '@/lib/mock'
 import { validateCPF, maskCPF } from '@/utils/cpf'
@@ -14,7 +15,6 @@ import { Camera, Save, User, Mail, Phone, CreditCard, PawPrint, ArrowRight, Aler
 import { SkeletonList } from '@/components/ui/Skeleton'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
-import { supabase } from '@/lib/supabase'
 
 const profileSchema = z.object({
   name:  z.string().min(2, 'Nome muito curto'),
@@ -28,7 +28,7 @@ export function AccountPage() {
   const { user, setUser } = useAuthStore()
   const queryClient       = useQueryClient()
   const fileRef           = useRef<HTMLInputElement>(null)
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [cpfValue, setCpfValue]           = useState(user?.cpf ?? '')
   const [activeTab, setActiveTab]         = useState<'perfil' | 'pets'>('perfil')
 
@@ -45,26 +45,7 @@ export function AccountPage() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: async (data: ProfileForm) => {
-      let avatarUrlToSave = avatarPreview ?? user?.avatar
-      if (avatarPreview && avatarPreview.startsWith('data:image')) {
-        try {
-          const fileExt = avatarPreview.split(';')[0].split('/')[1]
-          const fileName = `avatar-${user?.id}-${Date.now()}.${fileExt}`
-          const res = await fetch(avatarPreview)
-          const blob = await res.blob()
-
-          const { error } = await supabase.storage.from('petsitter-documents').upload(fileName, blob)
-          if (!error) {
-            const { data: { publicUrl } } = supabase.storage.from('petsitter-documents').getPublicUrl(fileName)
-            avatarUrlToSave = publicUrl
-          }
-        } catch (e) {
-          console.error('Erro ao fazer upload do avatar', e)
-        }
-      }
-      return authService.updateProfile({ ...data, avatar: avatarUrlToSave })
-    },
+    mutationFn: (data: ProfileForm) => authService.updateProfile(data),
     onSuccess: (updated) => {
       setUser(updated)
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] })
@@ -72,23 +53,28 @@ export function AccountPage() {
     },
   })
 
-  // Avatar upload (mock: FileReader preview)
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Avatar sobe direto pro backend assim que o arquivo é escolhido — não espera o "Salvar".
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 5 * 1024 * 1024) { toast.error('Imagem muito grande. Máximo 5MB.'); return }
-    const reader = new FileReader()
-    reader.onload = () => {
-      const dataUrl = reader.result as string
-      setAvatarPreview(dataUrl)
-      toast.success('Foto atualizada! Clique em "Salvar" para confirmar.')
+
+    try {
+      setIsUploadingAvatar(true)
+      const { avatarUrl: newAvatarUrl } = await userService.uploadAvatar(file)
+      setUser({ ...user!, avatarUrl: newAvatarUrl })
+      toast.success('Foto atualizada!')
+    } catch {
+      // Erro real já vira toast pelo interceptor de resposta do axios.
+    } finally {
+      setIsUploadingAvatar(false)
+      e.target.value = ''
     }
-    reader.readAsDataURL(file)
   }
 
   if (!user) return null
 
-  const displayAvatar = avatarPreview ?? avatarUrl(user.name, user.avatar)
+  const displayAvatar = avatarUrl(user.name, user.avatarUrl ?? undefined)
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
@@ -115,16 +101,20 @@ export function AccountPage() {
             />
             <button
               onClick={() => fileRef.current?.click()}
-              className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-md hover:bg-primary-600 transition-colors"
+              disabled={isUploadingAvatar}
+              className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-md hover:bg-primary-600 transition-colors disabled:opacity-60"
               title="Alterar foto"
             >
-              <Camera size={14} />
+              {isUploadingAvatar
+                ? <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                : <Camera size={14} />}
             </button>
             <input
               ref={fileRef}
               type="file"
               accept="image/*"
               className="hidden"
+              disabled={isUploadingAvatar}
               onChange={handleAvatarChange}
             />
           </div>

@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, FileText, User as UserIcon, Clock } from 'lucide-react'
 import { petsitterService } from '@/services/petsitter.service'
-import type { PetsitterProfile } from '@/types'
+import type { AdminPetsitterProfile } from '@/types'
 import { avatarUrl } from '@/utils'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
 export function AdminPetsittersPage() {
-  const [profiles, setProfiles] = useState<PetsitterProfile[]>([])
+  const [profiles, setProfiles] = useState<AdminPetsitterProfile[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchProfiles = async () => {
     try {
       setLoading(true)
-      // adminListPending na verdade retorna todos no service atual
-      const response = await petsitterService.adminListPending()
+      const response = await petsitterService.adminList()
       setProfiles(response.data)
     } catch (error) {
       console.error('Erro ao buscar petsitters', error)
@@ -28,12 +27,25 @@ export function AdminPetsittersPage() {
     fetchProfiles()
   }, [])
 
+  /** Busca a signed URL sob demanda no clique — nunca embutida na lista renderizada
+   * (expiraria antes do admin clicar, já que a listagem pode ficar aberta por um tempo). */
+  const viewDocument = async (profileId: string, field: 'identity-proof' | 'address-proof') => {
+    try {
+      const { url } = await petsitterService.getDocumentUrl(profileId, field)
+      window.open(url, '_blank', 'noreferrer')
+    } catch {
+      toast.error('Não foi possível abrir o documento.')
+    }
+  }
+
   const handleAction = async (id: string, action: 'approved' | 'rejected') => {
     if (!window.confirm(`Tem certeza que deseja ${action === 'approved' ? 'aprovar' : 'rejeitar'} este perfil?`)) return
     
     try {
-      const updated = await petsitterService.changeStatus(id, action)
-      setProfiles(prev => prev.map(p => p.id === id ? updated : p))
+      await petsitterService.changeStatus(id, action)
+      // changeStatus devolve o PetsitterProfile "cru" (sem user/indicadores de documento) —
+      // só atualiza o status localmente em vez de substituir o objeto inteiro.
+      setProfiles(prev => prev.map(p => p.id === id ? { ...p, status: action } : p))
       toast.success(`Perfil ${action === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso!`)
     } catch (error) {
       console.error('Erro ao alterar status', error)
@@ -62,8 +74,8 @@ export function AdminPetsittersPage() {
               <div className="p-6 flex-1">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <img 
-                      src={avatarUrl(profile.user?.name || 'User', profile.user?.avatar)} 
+                    <img
+                      src={avatarUrl(profile.user?.name || 'User', profile.user?.avatarUrl ?? undefined)}
                       alt={profile.user?.name} 
                       className="w-12 h-12 rounded-full object-cover"
                     />
@@ -95,18 +107,18 @@ export function AdminPetsittersPage() {
                   <div>
                     <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Documentos Anexados</h4>
                     <div className="space-y-2">
-                      {profile.identityProof ? (
-                        <a href={profile.identityProof} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-2 rounded-lg">
+                      {profile.hasIdentityProof ? (
+                        <button type="button" onClick={() => viewDocument(profile.id, 'identity-proof')} className="w-full flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-2 rounded-lg">
                           <FileText size={16} /> RG/CPF Enviado
-                        </a>
+                        </button>
                       ) : (
                         <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">RG/CPF pendente</p>
                       )}
-                      
-                      {profile.addressProof ? (
-                        <a href={profile.addressProof} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-2 rounded-lg">
+
+                      {profile.hasAddressProof ? (
+                        <button type="button" onClick={() => viewDocument(profile.id, 'address-proof')} className="w-full flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-2 rounded-lg">
                           <FileText size={16} /> Comp. Residência Enviado
-                        </a>
+                        </button>
                       ) : (
                         <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg">Comp. Residência pendente</p>
                       )}

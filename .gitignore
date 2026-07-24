@@ -1,0 +1,12 @@
+# Segredos / variáveis de ambiente — nunca versionar
+.env
+.env.*
+!.env.example
+!**/.env.example
+teste.txt
+
+node_modules/
+
+# Ferramentas locais — não fazem parte do projeto CuidaPet
+.claude/
+graphify-out/

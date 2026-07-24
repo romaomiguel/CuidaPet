@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { User } from '@/types'
 
 interface AuthStore {
@@ -13,41 +12,31 @@ interface AuthStore {
   logout: () => void
 }
 
-export const useAuthStore = create<AuthStore>()(
-  persist(
-    (set) => ({
+// Nada aqui é persistido (sem localStorage/sessionStorage) — access token e user vivem só
+// em memória. A sessão sobrevive a um F5 porque o boot da app (ver main.tsx) tenta renovar
+// silenciosamente via /auth/refresh (cookie httpOnly), não porque algo ficou salvo no browser.
+export const useAuthStore = create<AuthStore>()((set) => ({
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  isLoading: true,
+
+  setUser: (user) =>
+    set({
+      user,
+      isAuthenticated: user !== null,
+      isLoading: false,
+    }),
+
+  setToken: (token) => set({ token }),
+
+  setLoading: (isLoading) => set({ isLoading }),
+
+  logout: () =>
+    set({
       user: null,
       token: null,
       isAuthenticated: false,
-      isLoading: true,
-
-      setUser: (user) =>
-        set({
-          user,
-          isAuthenticated: user !== null,
-          isLoading: false,
-        }),
-
-      setToken: (token) => set({ token }),
-
-      setLoading: (isLoading) => set({ isLoading }),
-
-      logout: () =>
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-        }),
+      isLoading: false,
     }),
-    {
-      name: 'cuidapet-auth',
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    },
-  ),
-)
+}))

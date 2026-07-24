@@ -13,6 +13,7 @@ import { RegisterPage }          from '@/pages/auth/RegisterPage'
 import { AccountPage }           from '@/pages/account/AccountPage'
 import { BookingsPage }          from '@/pages/account/BookingsPage'
 import { PetsPage }              from '@/pages/account/PetsPage'
+import { ChatPage }              from '@/pages/chat/ChatPage'
 import { MatchWizard }           from '@/pages/tutor/MatchWizard'
 import { MatchResults }          from '@/pages/tutor/MatchResults'
 import { PetsitterDashboardPage }  from '@/pages/petsitter/PetsitterDashboardPage'
@@ -43,6 +44,10 @@ export default function App() {
         } />
         <Route path="/pets" element={
           <ProtectedRoute allowedRoles={['tutor']}><PetsPage /></ProtectedRoute>
+        } />
+        {/* Área logada – tutor e petsitter (conversa é do booking dos dois, admin não tem) */}
+        <Route path="/mensagens" element={
+          <ProtectedRoute allowedRoles={['tutor', 'petsitter']}><ChatPage /></ProtectedRoute>
         } />
         <Route path="/match"            element={<MatchWizard />} />
         <Route path="/match/resultados" element={<MatchResults />} />

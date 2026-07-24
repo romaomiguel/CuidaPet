@@ -42,7 +42,7 @@ function MatchCard({ ps, rank }: { ps: MatchResult; rank: number }) {
         {/* Avatar */}
         <div className="relative flex-shrink-0">
           <img
-            src={avatarUrl(ps.user?.name || '', ps.user?.avatar)}
+            src={avatarUrl(ps.user?.name || '', ps.user?.avatarUrl ?? undefined)}
             alt={ps.user?.name}
             className="w-16 h-16 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform duration-300"
           />

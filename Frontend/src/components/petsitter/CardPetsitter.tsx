@@ -28,7 +28,7 @@ export function CardPetsitter({ petsitter, className }: CardPetsitterProps) {
       {/* ── Photo ── */}
       <div className="relative aspect-[4/3] bg-gradient-to-br from-primary-100 to-primary-50 overflow-hidden">
         <img
-          src={avatarUrl(user.name, user.avatar)}
+          src={avatarUrl(user.name, user.avatarUrl ?? undefined)}
           alt={user.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
