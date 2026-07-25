@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { authService }  from '@/services/auth.service'
 import { chatService }  from '@/services/chat.service'
 import { avatarUrl }    from '@/utils'
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 
@@ -57,10 +58,10 @@ export function PublicLayout() {
     { to: '/mensagens',    icon: <MessageCircle size={15} />, label: 'Chats', badge: chatBadge },
   ]
   const petsitterLinks = [
-    { to: '/dashboard/petsitter',              icon: <LayoutDashboard size={15} />, label: 'Painel'       },
-    { to: '/dashboard/petsitter/agendamentos', icon: <CalendarDays size={15} />,    label: 'Agendamentos' },
-    { to: '/mensagens',                        icon: <MessageCircle size={15} />,   label: 'Chats', badge: chatBadge },
-    { to: '/dashboard/petsitter/perfil',       icon: <User size={15} />,            label: 'Meu perfil'   },
+    { to: '/dashboard/petsitter',                    icon: <LayoutDashboard size={15} />, label: 'Painel'       },
+    { to: '/dashboard/petsitter?tab=agendamentos',   icon: <CalendarDays size={15} />,    label: 'Agendamentos' },
+    { to: '/mensagens',                              icon: <MessageCircle size={15} />,   label: 'Chats', badge: chatBadge },
+    { to: '/dashboard/petsitter/perfil',             icon: <User size={15} />,            label: 'Meu perfil'   },
   ]
   const adminLinks: typeof tutorLinks = [
     { to: '/admin',            icon: <LayoutDashboard size={15} />, label: 'Painel Admin', badge: undefined },
@@ -110,6 +111,7 @@ export function PublicLayout() {
 
               {/* ─── Área Direita: Autenticação ─── */}
             <div className="flex items-center justify-end min-w-max gap-2">
+              {chatEnabled && <NotificationDropdown />}
               {isAuthenticated && user ? (
                 <div ref={dropdownRef} className="relative">
                   <button

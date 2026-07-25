@@ -6,10 +6,15 @@ import { RatingStars }    from '@/components/ui/RatingStars'
 import { ReviewModal }    from '@/components/booking/ReviewModal'
 import { LocationTrailMap } from '@/components/location/LocationTrailMap'
 import { formatCurrency, formatDateShort, bookingStatusConfig, serviceLabels, avatarUrl } from '@/utils'
-import { CalendarDays, AlertCircle, X, Star, MapPin } from 'lucide-react'
+import { CalendarDays, AlertCircle, X, Star, MapPin, Navigation } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import type { Booking, BookingStatus } from '@/types'
+
+function isHappeningNow(booking: Booking): boolean {
+  const now = Date.now()
+  return now >= new Date(booking.startDate).getTime() && now <= new Date(booking.endDate).getTime()
+}
 
 export function BookingsPage() {
   const queryClient = useQueryClient()
@@ -59,8 +64,17 @@ export function BookingsPage() {
       <div className="space-y-4">
         {bookings.map(b => {
           const cfg = bookingStatusConfig[b.status as BookingStatus]
+          const inProgress = b.status === 'accepted' && isHappeningNow(b)
           return (
-            <div key={b.id} className="card hover:shadow-card-hover transition-all duration-200">
+            <div key={b.id} className={clsx('card hover:shadow-card-hover transition-all duration-200', inProgress && 'border-l-4 border-l-emerald-400 bg-emerald-50/40')}>
+              {inProgress && (
+                <div className="flex items-center gap-2 text-emerald-700 text-xs font-semibold mb-3">
+                  <span className="relative w-2 h-2 rounded-full bg-emerald-500">
+                    <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping" />
+                  </span>
+                  Serviço em andamento agora
+                </div>
+              )}
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex items-center gap-3">
                   <img
@@ -99,9 +113,10 @@ export function BookingsPage() {
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => setTrailTarget(b.id)}
-                    className="btn-ghost text-primary-600 hover:bg-primary-50 text-sm"
+                    className={inProgress ? 'btn-primary text-sm bg-emerald-500 hover:bg-emerald-600 border-emerald-500' : 'btn-ghost text-primary-600 hover:bg-primary-50 text-sm'}
                   >
-                    <MapPin size={14} /> Ver trajeto
+                    {inProgress ? <Navigation size={14} /> : <MapPin size={14} />}
+                    {inProgress ? 'Ver localização em tempo real' : 'Ver trajeto'}
                   </button>
                 </div>
               )}

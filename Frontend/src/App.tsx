@@ -18,7 +18,6 @@ import { MatchWizard }           from '@/pages/tutor/MatchWizard'
 import { MatchResults }          from '@/pages/tutor/MatchResults'
 import { PetsitterDashboardPage }  from '@/pages/petsitter/PetsitterDashboardPage'
 import { PetsitterProfilePage }    from '@/pages/petsitter/PetsitterProfilePage'
-import { PetsitterBookingsPage }   from '@/pages/petsitter/PetsitterBookingsPage'
 import { AdminDashboardPage }      from '@/pages/admin/AdminDashboardPage'
 import { AdminUsersPage }          from '@/pages/admin/AdminUsersPage'
 import { AdminPetsittersPage }     from '@/pages/admin/AdminPetsittersPage'
@@ -60,7 +59,7 @@ export default function App() {
           <ProtectedRoute allowedRoles={['petsitter']}><PetsitterProfilePage /></ProtectedRoute>
         } />
         <Route path="/dashboard/petsitter/agendamentos" element={
-          <ProtectedRoute allowedRoles={['petsitter']}><PetsitterBookingsPage /></ProtectedRoute>
+          <Navigate to="/dashboard/petsitter?tab=agendamentos" replace />
         } />
       </Route>
 
