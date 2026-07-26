@@ -31,7 +31,7 @@ export function PetsitterFilters({ filters, onChange, onReset, resultCount }: Pe
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SlidersHorizontal size={18} className="text-primary-500" />
-          <h2 className="font-bold text-gray-900">Filtros</h2>
+          <h2 className="font-heading font-bold text-ink">Filtros</h2>
           {resultCount !== undefined && (
             <span className="text-xs text-muted">({resultCount} resultados)</span>
           )}
@@ -39,7 +39,7 @@ export function PetsitterFilters({ filters, onChange, onReset, resultCount }: Pe
         {hasActive && (
           <button
             onClick={onReset}
-            className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 font-medium transition-colors"
+            className="flex items-center gap-1 text-xs text-error-500 hover:text-error-600 font-medium transition-colors"
           >
             <X size={13} /> Limpar
           </button>
@@ -70,7 +70,7 @@ export function PetsitterFilters({ filters, onChange, onReset, resultCount }: Pe
               onChange={() => set('service', '')}
               className="accent-primary-500"
             />
-            <span className="text-sm text-gray-700 group-hover:text-gray-900">Todos os serviços</span>
+            <span className="text-sm text-muted group-hover:text-ink">Todos os serviços</span>
           </label>
           {SERVICES.map(([key, label]) => (
             <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
@@ -81,7 +81,7 @@ export function PetsitterFilters({ filters, onChange, onReset, resultCount }: Pe
                 onChange={() => set('service', key)}
                 className="accent-primary-500"
               />
-              <span className="text-sm text-gray-700 group-hover:text-gray-900">{label}</span>
+              <span className="text-sm text-muted group-hover:text-ink">{label}</span>
             </label>
           ))}
         </div>
@@ -106,7 +106,7 @@ export function PetsitterFilters({ filters, onChange, onReset, resultCount }: Pe
           onChange={e => set('maxPrice', Number(e.target.value) < 300 ? Number(e.target.value) : undefined)}
           className="w-full accent-primary-500 cursor-pointer"
         />
-        <div className="flex justify-between text-xs text-gray-400 mt-1">
+        <div className="flex justify-between text-xs text-muted mt-1">
           <span>R$ 20</span><span>R$ 300+</span>
         </div>
       </div>
@@ -123,7 +123,7 @@ export function PetsitterFilters({ filters, onChange, onReset, resultCount }: Pe
               onChange={() => set('minRating', undefined)}
               className="accent-primary-500"
             />
-            <span className="text-sm text-gray-700 group-hover:text-gray-900">Qualquer avaliação</span>
+            <span className="text-sm text-muted group-hover:text-ink">Qualquer avaliação</span>
           </label>
           {RATINGS.map(({ value, label }) => (
             <label key={value} className="flex items-center gap-2.5 cursor-pointer group">
@@ -134,7 +134,7 @@ export function PetsitterFilters({ filters, onChange, onReset, resultCount }: Pe
                 onChange={() => set('minRating', Number(value))}
                 className="accent-primary-500"
               />
-              <span className="text-sm text-gray-700 group-hover:text-gray-900">{label}</span>
+              <span className="text-sm text-muted group-hover:text-ink">{label}</span>
             </label>
           ))}
         </div>

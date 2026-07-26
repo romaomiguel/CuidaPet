@@ -56,7 +56,8 @@ export function NotificationDropdown() {
       title: c.otherUser.name,
       subtitle: c.lastMessage?.isSystem ? c.lastMessage.content : (c.lastMessage?.content ?? 'Nova mensagem'),
       time: c.updatedAt,
-      to: '/mensagens',
+      // Tutor e petsitter têm o chat embutido na aba "Mensagens" do respectivo hub de conta.
+      to: isPetsitter ? '/dashboard/petsitter?tab=mensagens' : '/conta?tab=mensagens',
     }))
 
   const bookingItems: NotificationItem[] = isPetsitter
@@ -69,7 +70,7 @@ export function NotificationDropdown() {
           title: b.tutor?.name ?? 'Novo tutor',
           subtitle: `Nova solicitação de ${serviceLabels[b.service]}`,
           time: b.createdAt,
-          to: '/dashboard/petsitter?tab=agendamentos',
+          to: '/dashboard/petsitter?tab=pendentes',
         }))
     : []
 

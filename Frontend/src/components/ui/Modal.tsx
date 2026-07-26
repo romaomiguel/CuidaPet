@@ -11,7 +11,7 @@ interface ModalProps {
   children: React.ReactNode
   /** Conteúdo fixo no rodapé — nunca rola, botão sempre visível */
   footer?: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   closeOnBackdrop?: boolean
 }
 
@@ -20,6 +20,7 @@ const sizeClasses = {
   md: 'max-w-md',
   lg: 'max-w-lg',
   xl: 'max-w-xl',
+  '2xl': 'max-w-3xl',
 }
 
 export function Modal({
@@ -83,14 +84,14 @@ export function Modal({
       >
         {/* ── Header — flex-shrink-0 (nunca comprime) ── */}
         {title ? (
-          <div className="flex-shrink-0 flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex-shrink-0 flex items-start justify-between px-6 pt-5 pb-4 border-b border-stroke">
             <div>
-              <h2 id="modal-title" className="text-lg font-bold text-gray-900">{title}</h2>
-              {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
+              <h2 id="modal-title" className="font-heading text-lg font-bold text-ink">{title}</h2>
+              {description && <p className="mt-1 text-sm text-muted">{description}</p>}
             </div>
             <button
               onClick={onClose}
-              className="ml-4 flex-shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+              className="ml-4 flex-shrink-0 p-1.5 rounded-full text-muted hover:text-ink hover:bg-background transition-all"
               aria-label="Fechar"
             >
               <X size={18} />
@@ -98,7 +99,7 @@ export function Modal({
           </div>
         ) : (
           <div className="flex-shrink-0 flex justify-center pt-3 pb-1 sm:hidden">
-            <div className="w-10 h-1.5 rounded-full bg-gray-200" />
+            <div className="w-10 h-1.5 rounded-full bg-stroke" />
           </div>
         )}
 
@@ -113,7 +114,7 @@ export function Modal({
           {!title && (
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all"
+              className="absolute top-4 right-4 p-1.5 rounded-full text-muted hover:text-ink hover:bg-background transition-all"
               aria-label="Fechar"
             >
               <X size={18} />
@@ -130,7 +131,7 @@ export function Modal({
          * py-4 garante espaço generoso sem compressão.
          */}
         {footer && (
-          <div className="flex-shrink-0 border-t border-gray-100 px-5 py-4 bg-white sm:rounded-b-2xl">
+          <div className="flex-shrink-0 border-t border-stroke px-5 py-4 bg-white sm:rounded-b-2xl">
             {footer}
           </div>
         )}

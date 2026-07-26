@@ -74,6 +74,14 @@ export const bookingStatusConfig: Record<
   completed: { label: 'Concluído',  badgeClass: 'badge-blue'   },
 }
 
+/** Aplica máscara (00) 00000-0000 conforme o usuário digita */
+export function maskPhone(value: string): string {
+  const nums = value.replace(/\D/g, '').slice(0, 11)
+  return nums
+    .replace(/(\d{2})(\d)/, '($1) $2')
+    .replace(/(\d{5})(\d)/, '$1-$2')
+}
+
 export function avatarUrl(name: string, photo?: string): string {
   if (photo) return photo
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4CAF50&color=fff&bold=true&format=svg`

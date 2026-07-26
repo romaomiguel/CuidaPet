@@ -2,26 +2,34 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { PublicLayout }    from '@/layouts/PublicLayout'
 import { AuthLayout }      from '@/layouts/AuthLayout'
 import { ProtectedRoute }  from '@/components/auth/ProtectedRoute'
+import { useAuthStore }    from '@/store/auth.store'
 
 import { LandingPage }           from '@/pages/public/LandingPage'
 import { SearchPage }            from '@/pages/public/SearchPage'
 import { PetsitterDetailPage }   from '@/pages/public/PetsitterDetailPage'
 import { HelpPage }              from '@/pages/public/HelpPage'
+import { HelpCategoryPage }      from '@/pages/public/HelpCategoryPage'
+import { HelpArticlePage }       from '@/pages/public/HelpArticlePage'
+import { HelpSearchResultsPage } from '@/pages/public/HelpSearchResultsPage'
 import { NotFoundPage }          from '@/pages/public/NotFoundPage'
 import { LoginPage }             from '@/pages/auth/LoginPage'
 import { RegisterPage }          from '@/pages/auth/RegisterPage'
 import { AccountPage }           from '@/pages/account/AccountPage'
-import { BookingsPage }          from '@/pages/account/BookingsPage'
-import { PetsPage }              from '@/pages/account/PetsPage'
-import { ChatPage }              from '@/pages/chat/ChatPage'
 import { MatchWizard }           from '@/pages/tutor/MatchWizard'
 import { MatchResults }          from '@/pages/tutor/MatchResults'
-import { PetsitterDashboardPage }  from '@/pages/petsitter/PetsitterDashboardPage'
-import { PetsitterProfilePage }    from '@/pages/petsitter/PetsitterProfilePage'
+import { PetsitterAccountPage }    from '@/pages/petsitter/PetsitterAccountPage'
 import { AdminDashboardPage }      from '@/pages/admin/AdminDashboardPage'
 import { AdminUsersPage }          from '@/pages/admin/AdminUsersPage'
 import { AdminPetsittersPage }     from '@/pages/admin/AdminPetsittersPage'
+import { AdminSupportMessagesPage } from '@/pages/admin/AdminSupportMessagesPage'
 import { DashboardLayout }         from '@/layouts/DashboardLayout'
+
+// Tutor e petsitter têm "Mensagens" embutido como aba dentro do respectivo hub de conta.
+function MessagesRoute() {
+  const { user } = useAuthStore()
+  const hub = user?.role === 'petsitter' ? '/dashboard/petsitter' : '/conta'
+  return <Navigate to={`${hub}?tab=mensagens`} replace />
+}
 
 export default function App() {
   return (
@@ -31,36 +39,17 @@ export default function App() {
         <Route index element={<LandingPage />} />
         <Route path="/buscar"           element={<SearchPage />} />
         <Route path="/petsitters/:id"   element={<PetsitterDetailPage />} />
-        <Route path="/ajuda"            element={<HelpPage />} />
+        <Route path="/ajuda"                  element={<HelpPage />} />
+        <Route path="/ajuda/busca"            element={<HelpSearchResultsPage />} />
+        <Route path="/ajuda/:categoria"       element={<HelpCategoryPage />} />
+        <Route path="/ajuda/:categoria/:slug" element={<HelpArticlePage />} />
 
-        {/* Área logada – qualquer role */}
-        <Route path="/conta" element={
-          <ProtectedRoute><AccountPage /></ProtectedRoute>
-        } />
-        {/* Área logada – somente tutor */}
-        <Route path="/agendamentos" element={
-          <ProtectedRoute allowedRoles={['tutor']}><BookingsPage /></ProtectedRoute>
-        } />
-        <Route path="/pets" element={
-          <ProtectedRoute allowedRoles={['tutor']}><PetsPage /></ProtectedRoute>
-        } />
         {/* Área logada – tutor e petsitter (conversa é do booking dos dois, admin não tem) */}
         <Route path="/mensagens" element={
-          <ProtectedRoute allowedRoles={['tutor', 'petsitter']}><ChatPage /></ProtectedRoute>
+          <ProtectedRoute allowedRoles={['tutor', 'petsitter']}><MessagesRoute /></ProtectedRoute>
         } />
         <Route path="/match"            element={<MatchWizard />} />
         <Route path="/match/resultados" element={<MatchResults />} />
-
-        {/* Área logada – somente petsitter */}
-        <Route path="/dashboard/petsitter" element={
-          <ProtectedRoute allowedRoles={['petsitter']}><PetsitterDashboardPage /></ProtectedRoute>
-        } />
-        <Route path="/dashboard/petsitter/perfil" element={
-          <ProtectedRoute allowedRoles={['petsitter']}><PetsitterProfilePage /></ProtectedRoute>
-        } />
-        <Route path="/dashboard/petsitter/agendamentos" element={
-          <Navigate to="/dashboard/petsitter?tab=agendamentos" replace />
-        } />
       </Route>
 
       {/* ── Auth ── */}
@@ -69,15 +58,42 @@ export default function App() {
         <Route path="/cadastro" element={<RegisterPage />} />
       </Route>
 
+      {/* ── Área logada com sidebar + navbar (tutor e petsitter) ── */}
+      <Route element={
+        <ProtectedRoute><DashboardLayout /></ProtectedRoute>
+      }>
+        <Route path="/conta"        element={<AccountPage />} />
+        {/* Pets/Agendamentos agora são abas dentro de /conta — redirects mantêm links/favoritos antigos funcionando */}
+        <Route path="/pets" element={
+          <ProtectedRoute allowedRoles={['tutor']}><Navigate to="/conta?tab=pets" replace /></ProtectedRoute>
+        } />
+        <Route path="/agendamentos" element={
+          <ProtectedRoute allowedRoles={['tutor']}><Navigate to="/conta?tab=agendamentos" replace /></ProtectedRoute>
+        } />
+
+        {/* Área do Petsitter — mesmo hub, "Agendamentos" é a seção padrão */}
+        <Route path="/dashboard/petsitter" element={
+          <ProtectedRoute allowedRoles={['petsitter']}><PetsitterAccountPage /></ProtectedRoute>
+        } />
+        {/* Rotas antigas — redirects mantêm links/favoritos funcionando */}
+        <Route path="/dashboard/petsitter/perfil" element={
+          <ProtectedRoute allowedRoles={['petsitter']}><Navigate to="/dashboard/petsitter?tab=perfil" replace /></ProtectedRoute>
+        } />
+        <Route path="/dashboard/petsitter/agendamentos" element={
+          <ProtectedRoute allowedRoles={['petsitter']}><Navigate to="/dashboard/petsitter?tab=pendentes" replace /></ProtectedRoute>
+        } />
+      </Route>
+
       {/* ── Admin Dashboard ── */}
       <Route path="/admin" element={
         <ProtectedRoute allowedRoles={['admin']}>
-          <DashboardLayout role="admin" />
+          <DashboardLayout />
         </ProtectedRoute>
       }>
         <Route index element={<AdminDashboardPage />} />
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="petsitters" element={<AdminPetsittersPage />} />
+        <Route path="suporte" element={<AdminSupportMessagesPage />} />
       </Route>
 
       {/* ── Fallback ── */}

@@ -57,14 +57,14 @@ export function RatingStars({
               size={pixelSize}
               className={clsx(
                 'transition-colors duration-150',
-                filled ? 'text-secondary-500 fill-secondary-500' : 'text-gray-300 fill-gray-100',
+                filled ? 'text-secondary-500 fill-secondary-500' : 'text-stroke fill-background',
               )}
             />
           </button>
         )
       })}
       {showValue && (
-        <span className="ml-1 text-sm font-semibold text-gray-700">
+        <span className="ml-1 text-sm font-semibold text-ink">
           {value.toFixed(1)}
         </span>
       )}

@@ -4,12 +4,11 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { petService }    from '@/services/pet.service'
-import { Modal }         from '@/components/ui/Modal'
 import { SkeletonList }  from '@/components/ui/Skeleton'
-import { useDisclosure } from '@/hooks/useDisclosure'
 import { speciesLabels } from '@/utils'
-import { PawPrint, Plus, Pencil, Trash2, AlertCircle, Camera } from 'lucide-react'
+import { PawPrint, Pencil, Trash2, AlertCircle, Camera, HeartHandshake } from 'lucide-react'
 import toast from 'react-hot-toast'
+import clsx from 'clsx'
 import type { PetPayload, PetSpecies } from '@/types'
 
 const schema = z.object({
@@ -22,12 +21,12 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
-const FORM_ID = 'pet-form'
+const SPECIES_OPTIONS = Object.entries(speciesLabels) as [PetSpecies, string][]
 
 export function PetsPage() {
   const queryClient = useQueryClient()
-  const modal       = useDisclosure()
   const fileRef     = useRef<HTMLInputElement>(null)
+  const formTopRef  = useRef<HTMLDivElement>(null)
 
   const [editing,      setEditing]      = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
@@ -38,12 +37,12 @@ export function PetsPage() {
     queryFn:  petService.list,
   })
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
+  const species = watch('species')
 
-  const closeModal = () => {
-    modal.close()
+  const resetForm = () => {
     reset({})
     setEditing(null)
     setPhotoPreview(null)
@@ -55,7 +54,7 @@ export function PetsPage() {
     onSettled: () => setIsSaving(false),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pets'] })
-      closeModal()
+      resetForm()
       toast.success('Pet adicionado com sucesso!')
     },
   })
@@ -67,7 +66,7 @@ export function PetsPage() {
     onSettled: () => setIsSaving(false),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pets'] })
-      closeModal()
+      resetForm()
       toast.success('Pet atualizado!')
     },
   })
@@ -80,13 +79,6 @@ export function PetsPage() {
     },
   })
 
-  const openCreate = () => {
-    reset({})
-    setEditing(null)
-    setPhotoPreview(null)
-    modal.open()
-  }
-
   const openEdit = (pet: typeof pets[0]) => {
     setEditing(pet.id)
     reset({
@@ -98,7 +90,7 @@ export function PetsPage() {
       notes:   pet.notes,
     })
     setPhotoPreview(pet.photo ?? null)
-    modal.open()
+    formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,273 +113,161 @@ export function PetsPage() {
       : createMutation.mutate(payload)
   }
 
-  // ── Footer do Modal (fixo, fora do scroll) ──────────────────────────────────
-  const modalFooter = (
-    <div className="flex justify-end gap-3">
-      <button
-        type="button"
-        onClick={closeModal}
-        className="btn-ghost"
-      >
-        Cancelar
-      </button>
-      <button
-        type="submit"
-        form={FORM_ID}
-        disabled={isSaving}
-        className="btn-primary"
-      >
-        {isSaving ? (
-          <span className="flex items-center gap-2">
-            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            Salvando…
-          </span>
-        ) : editing ? 'Salvar alterações' : 'Adicionar pet'}
-      </button>
-    </div>
-  )
-
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
+    <div className="max-w-6xl mx-auto">
+      <div className="flex flex-col lg:flex-row gap-8">
 
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <PawPrint size={24} className="text-primary-500" /> Meus pets
-          </h1>
-          <p className="text-gray-500 mt-1">Gerencie os perfis dos seus animais</p>
-        </div>
-        <button onClick={openCreate} className="btn-primary">
-          <Plus size={16} /> Adicionar pet
-        </button>
-      </div>
-
-      {/* States */}
-      {isLoading && <SkeletonList count={3} component="pet" />}
-
-      {isError && !isLoading && (
-        <div className="card flex flex-col items-center py-12 text-center">
-          <AlertCircle size={36} className="text-gray-300 mb-3" />
-          <p className="text-gray-600 font-medium">Erro ao carregar pets</p>
-          <p className="text-sm text-gray-400 mt-1">Verifique se a API está rodando</p>
-        </div>
-      )}
-
-      {!isLoading && !isError && pets.length === 0 && (
-        <div className="card flex flex-col items-center py-16 text-center">
-          <div className="text-5xl mb-4">🐾</div>
-          <h3 className="font-semibold text-gray-700 mb-1">Nenhum pet cadastrado</h3>
-          <p className="text-sm text-gray-400 mb-5">
-            Adicione o perfil do seu pet para começar a agendar serviços!
-          </p>
-          <button onClick={openCreate} className="btn-primary">
-            <Plus size={16} /> Adicionar pet
-          </button>
-        </div>
-      )}
-
-      {/* Pet list */}
-      <div className="space-y-3">
-        {pets.map(pet => (
-          <div
-            key={pet.id}
-            className="card flex items-center gap-4 hover:shadow-card-hover transition-all"
-          >
-            {/* Photo or emoji */}
-            {pet.photo ? (
-              <img
-                src={pet.photo}
-                alt={pet.name}
-                className="w-16 h-16 rounded-2xl object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center text-3xl flex-shrink-0">
-                {pet.species === 'cachorro' ? '🐶' : pet.species === 'gato' ? '🐱' : '🐾'}
-              </div>
-            )}
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-gray-900">{pet.name}</p>
-              <p className="text-sm text-gray-500">
-                {speciesLabels[pet.species]}
-                {' • '}{pet.age} {pet.age === 1 ? 'ano' : 'anos'}
-                {pet.breed  ? ` • ${pet.breed}`  : ''}
-                {pet.weight ? ` • ${pet.weight}kg` : ''}
-              </p>
-              {pet.notes && (
-                <p className="text-xs text-gray-400 mt-0.5 truncate">{pet.notes}</p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-1 flex-shrink-0">
-              <button
-                onClick={() => openEdit(pet)}
-                className="btn-ghost p-2 text-gray-400 hover:text-primary-600"
-                aria-label="Editar"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                onClick={() => {
-                  if (confirm(`Remover ${pet.name}?`)) deleteMutation.mutate(pet.id)
-                }}
-                className="btn-ghost p-2 text-gray-400 hover:text-red-500"
-                aria-label="Remover"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
+        {/* ── Coluna esquerda: formulário ── */}
+        <div className="flex-1 flex flex-col gap-4" ref={formTopRef}>
+          <div className="flex items-center justify-between">
+            <h1 className="font-heading text-3xl font-bold text-primary-700">
+              {editing ? 'Editar Pet' : 'Adicionar Novo Pet'}
+            </h1>
+            <PawPrint size={32} className="text-secondary-500" />
           </div>
-        ))}
-      </div>
+          <p className="text-muted -mt-2">
+            Preencha os dados do seu novo amigo para que nossos cuidadores possam oferecer o melhor atendimento possível.
+          </p>
 
-      {/* ── Modal ── */}
-      <Modal
-        isOpen={modal.isOpen}
-        onClose={closeModal}
-        title={editing ? 'Editar pet' : 'Adicionar pet'}
-        description="Preencha as informações do seu pet"
-        size="md"
-        footer={modalFooter}
-      >
-        {/*
-         * O <form> tem id={FORM_ID} para o botão de submit no footer
-         * (type="submit" form={FORM_ID}) funcionar mesmo estando fora do form.
-         * O body do Modal já tem overflow-y-auto, então basta não restringir a altura aqui.
-         */}
-        <form id={FORM_ID} onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="bg-white rounded-[2rem] shadow-card p-6 lg:p-8 flex flex-col gap-5">
 
-            {/* Foto do pet */}
-            <div className="flex flex-col items-center gap-2">
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="relative w-24 h-24 rounded-2xl overflow-hidden group bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-primary-400 transition-colors"
-                aria-label="Adicionar foto do pet"
-              >
-                {photoPreview ? (
-                  <>
-                    <img
-                      src={photoPreview}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Camera size={20} className="text-white" />
-                    </div>
-                  </>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed border-stroke rounded-2xl bg-background hover:bg-primary-50 transition-colors group"
+            >
+              {photoPreview ? (
+                <img src={photoPreview} alt="Preview" className="w-20 h-20 rounded-full object-cover ring-4 ring-primary-100" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Camera size={28} className="text-primary-700" />
+                </div>
+              )}
+              <span className="text-sm font-semibold text-muted">
+                {photoPreview ? 'Trocar foto' : 'Adicionar foto do pet'}
+              </span>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            </button>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label" htmlFor="pet-name">Nome do Pet</label>
+                <input id="pet-name" {...register('name')} className={`input-flat ${errors.name ? 'ring-2 ring-error-100 !border-error-500' : ''}`} placeholder="Ex: Rex, Luna..." />
+                {errors.name && <p className="text-xs text-error-500 mt-1 ml-4">⚠ {errors.name.message}</p>}
+              </div>
+
+              <div>
+                <label className="label">Tipo de Animal</label>
+                <div className="flex gap-2 flex-wrap pt-1">
+                  {SPECIES_OPTIONS.map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setValue('species', value, { shouldValidate: true })}
+                      className={clsx(
+                        'px-4 py-2 rounded-pill text-sm font-semibold transition-colors',
+                        species === value ? 'bg-secondary-500 text-primary-800' : 'bg-background text-muted hover:bg-stroke',
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {errors.species && <p className="text-xs text-error-500 mt-1 ml-1">⚠ {errors.species.message}</p>}
+              </div>
+
+              <div>
+                <label className="label" htmlFor="pet-breed">Raça</label>
+                <input id="pet-breed" {...register('breed')} className="input-flat" placeholder="Ex: Golden Retriever" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label" htmlFor="pet-age">Idade (anos)</label>
+                  <input id="pet-age" type="number" min={0} {...register('age')} className={`input-flat ${errors.age ? 'ring-2 ring-error-100 !border-error-500' : ''}`} placeholder="Ex: 3" />
+                  {errors.age && <p className="text-xs text-error-500 mt-1 ml-4">⚠ {errors.age.message}</p>}
+                </div>
+                <div>
+                  <label className="label" htmlFor="pet-weight">Peso (kg)</label>
+                  <input id="pet-weight" type="number" step="0.1" min={0} {...register('weight')} className="input-flat" placeholder="Ex: 15.5" />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="pet-notes">Informações Adicionais</label>
+              <textarea id="pet-notes" {...register('notes')} rows={4} className="w-full p-4 rounded-2xl bg-background border-2 border-transparent focus:border-primary-400 focus:bg-white outline-none text-sm text-ink resize-none transition-all" placeholder="Alergias, temperamento, medicamentos, necessidades especiais..." />
+            </div>
+
+            <div className="flex gap-3 self-end">
+              {editing && (
+                <button type="button" onClick={resetForm} className="btn-ghost">
+                  Cancelar edição
+                </button>
+              )}
+              <button type="submit" disabled={isSaving} className="btn-secondary">
+                {isSaving ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-primary-800/30 border-t-primary-800 rounded-full animate-spin" />
+                    Salvando…
+                  </span>
+                ) : editing ? 'Salvar alterações' : 'Cadastrar Pet'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* ── Coluna direita: Meus Pets ── */}
+        <div className="w-full lg:w-80 flex flex-col gap-4">
+          <h2 className="font-heading text-2xl font-bold text-ink">Meus Pets</h2>
+
+          {isLoading && <SkeletonList count={3} component="pet" />}
+
+          {isError && !isLoading && (
+            <div className="card flex flex-col items-center py-10 text-center">
+              <AlertCircle size={32} className="text-muted mb-2" />
+              <p className="text-ink font-medium text-sm">Erro ao carregar pets</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {pets.map(pet => (
+              <div key={pet.id} className="bg-white rounded-[1.5rem] p-3 shadow-card hover:shadow-card-hover transition-all flex items-center gap-3">
+                {pet.photo ? (
+                  <img src={pet.photo} alt={pet.name} className="avatar-framed w-14 h-14 flex-shrink-0" />
                 ) : (
-                  <div className="flex flex-col items-center gap-1 text-gray-400">
-                    <Camera size={24} />
-                    <span className="text-xs font-medium">Foto</span>
+                  <div className="avatar-framed w-14 h-14 flex-shrink-0 bg-primary-50 flex items-center justify-center text-2xl">
+                    {pet.species === 'cachorro' ? '🐶' : pet.species === 'gato' ? '🐱' : '🐾'}
                   </div>
                 )}
-              </button>
-              <p className="text-xs text-gray-400">
-                {photoPreview ? 'Clique para trocar a foto' : 'Opcional — clique para adicionar'}
-              </p>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
-            </div>
-
-            {/* Nome */}
-            <div>
-              <label className="label" htmlFor={`${FORM_ID}-name`}>Nome do pet *</label>
-              <input
-                id={`${FORM_ID}-name`}
-                {...register('name')}
-                className={`input-field ${errors.name ? 'ring-2 ring-red-400 border-red-300' : ''}`}
-                placeholder="Ex: Rex, Luna, Bolinha…"
-              />
-              {errors.name && (
-                <p className="text-xs text-red-500 mt-1">⚠ {errors.name.message}</p>
-              )}
-            </div>
-
-            {/* Espécie + Raça */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label" htmlFor={`${FORM_ID}-species`}>Espécie *</label>
-                <select
-                  id={`${FORM_ID}-species`}
-                  {...register('species')}
-                  className={`select-field ${errors.species ? 'ring-2 ring-red-400 border-red-300' : ''}`}
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-ink truncate">{pet.name}</p>
+                  <p className="text-xs text-muted truncate">
+                    {speciesLabels[pet.species]}{pet.breed ? ` • ${pet.breed}` : ''} • {pet.age} {pet.age === 1 ? 'ano' : 'anos'}
+                  </p>
+                </div>
+                <button onClick={() => openEdit(pet)} className="w-8 h-8 rounded-full bg-background flex items-center justify-center text-muted hover:text-primary-600 flex-shrink-0" aria-label="Editar">
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={() => { if (confirm(`Remover ${pet.name}?`)) deleteMutation.mutate(pet.id) }}
+                  className="w-8 h-8 rounded-full bg-background flex items-center justify-center text-muted hover:text-error-500 flex-shrink-0"
+                  aria-label="Remover"
                 >
-                  <option value="">Selecione</option>
-                  {Object.entries(speciesLabels).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
-                </select>
-                {errors.species && (
-                  <p className="text-xs text-red-500 mt-1">⚠ {errors.species.message}</p>
-                )}
+                  <Trash2 size={14} />
+                </button>
               </div>
-              <div>
-                <label className="label" htmlFor={`${FORM_ID}-breed`}>Raça</label>
-                <input
-                  id={`${FORM_ID}-breed`}
-                  {...register('breed')}
-                  className="input-field"
-                  placeholder="Ex: Labrador"
-                />
-              </div>
-            </div>
+            ))}
 
-            {/* Idade + Peso */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label" htmlFor={`${FORM_ID}-age`}>Idade (anos) *</label>
-                <input
-                  id={`${FORM_ID}-age`}
-                  {...register('age')}
-                  type="number"
-                  min={0}
-                  className={`input-field ${errors.age ? 'ring-2 ring-red-400 border-red-300' : ''}`}
-                  placeholder="Ex: 3"
-                />
-                {errors.age && (
-                  <p className="text-xs text-red-500 mt-1">⚠ {errors.age.message}</p>
-                )}
+            {!isLoading && !isError && pets.length === 0 && (
+              <div className="p-6 rounded-[1.5rem] bg-primary-50 border-2 border-dashed border-primary-200 flex flex-col items-center text-center gap-1.5">
+                <HeartHandshake size={28} className="text-primary-500 opacity-70" />
+                <span className="text-sm font-semibold text-primary-700">Seus pets aparecem aqui</span>
               </div>
-              <div>
-                <label className="label" htmlFor={`${FORM_ID}-weight`}>Peso (kg)</label>
-                <input
-                  id={`${FORM_ID}-weight`}
-                  {...register('weight')}
-                  type="number"
-                  step="0.1"
-                  min={0}
-                  className="input-field"
-                  placeholder="Ex: 12.5"
-                />
-              </div>
-            </div>
-
-            {/* Observações */}
-            <div>
-              <label className="label" htmlFor={`${FORM_ID}-notes`}>Observações</label>
-              <textarea
-                id={`${FORM_ID}-notes`}
-                {...register('notes')}
-                rows={3}
-                className="input-field resize-none"
-                placeholder="Alergias, medicamentos, comportamento especial…"
-              />
-            </div>
-
+            )}
           </div>
-        </form>
-      </Modal>
+        </div>
+      </div>
     </div>
   )
 }

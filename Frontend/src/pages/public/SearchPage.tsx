@@ -70,17 +70,17 @@ export function SearchPage() {
     <div className="min-h-screen bg-background">
 
       {/* ── Search header bar ── */}
-      <div className="bg-white border-b border-gray-100 shadow-sm sticky top-16 z-20">
+      <div className="bg-white border-b border-stroke shadow-sm sticky top-16 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <form onSubmit={handleSearchSubmit} className="flex gap-2">
-            <div className="flex-1 flex items-center">
+            <div className="flex-1 flex items-center bg-background rounded-pill px-4 py-1.5 border-2 border-transparent focus-within:border-primary-400 focus-within:bg-white transition-all">
               <CityAutocomplete
                 value={search}
                 onChange={setSearch}
                 cities={cities}
                 placeholder="Buscar por cidade..."
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-1.5 focus-within:ring-2 focus-within:ring-primary-300 focus-within:border-transparent transition-all"
-                icon={<Search size={16} className="text-gray-400 flex-shrink-0" />}
+                className="w-full"
+                icon={<Search size={16} className="text-muted flex-shrink-0" />}
               />
             </div>
             <button type="submit" className="btn-primary px-5 py-2.5">
@@ -101,7 +101,7 @@ export function SearchPage() {
             <button
               type="button"
               onClick={() => navigate('/match')}
-              className="hidden sm:flex items-center gap-1.5 bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100 font-semibold text-sm px-4 py-2.5 rounded-xl transition-all whitespace-nowrap"
+              className="hidden sm:flex items-center gap-1.5 bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100 font-semibold text-sm px-4 py-2.5 rounded-pill transition-all whitespace-nowrap"
             >
               ✨ Match ideal
             </button>
@@ -114,7 +114,7 @@ export function SearchPage() {
 
           {/* ── Sidebar filters — desktop ── */}
           <div className="hidden lg:block w-72 flex-shrink-0">
-            <div className="bg-white rounded-2xl shadow-card p-6 sticky top-36">
+            <div className="card sticky top-36">
               <PetsitterFilters
                 filters={filters}
                 onChange={setFilters}
@@ -130,8 +130,8 @@ export function SearchPage() {
               <div className="absolute inset-0 bg-black/50" onClick={mobileFilters.close} />
               <div className="absolute bottom-0 inset-x-0 bg-white rounded-t-3xl p-6 animate-slide-up max-h-[85vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-gray-900 text-lg">Filtros</h3>
-                  <button onClick={mobileFilters.close} className="p-2 rounded-xl hover:bg-gray-100">
+                  <h3 className="font-heading font-bold text-ink text-lg">Filtros</h3>
+                  <button onClick={mobileFilters.close} className="p-2 rounded-full hover:bg-background">
                     <X size={20} />
                   </button>
                 </div>
@@ -141,7 +141,7 @@ export function SearchPage() {
                   onReset={handleReset}
                   resultCount={petsitters.length}
                 />
-                <div className="mt-6 pt-4 border-t border-gray-100">
+                <div className="mt-6 pt-4 border-t border-stroke">
                   <button onClick={mobileFilters.close} className="btn-primary w-full py-3">
                     Ver {petsitters.length} resultado{petsitters.length !== 1 ? 's' : ''}
                   </button>
@@ -154,9 +154,9 @@ export function SearchPage() {
           <div className="flex-1 min-w-0">
             {/* Sort + count */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-              <p className="text-gray-600 text-sm">
+              <p className="text-muted text-sm">
                 {isLoading ? 'Buscando...' : (
-                  <><span className="font-semibold text-gray-900">{petsitters.length}</span> petsitter{petsitters.length !== 1 ? 's' : ''} encontrado{petsitters.length !== 1 ? 's' : ''}</>
+                  <><span className="font-semibold text-ink">{petsitters.length}</span> petsitter{petsitters.length !== 1 ? 's' : ''} encontrado{petsitters.length !== 1 ? 's' : ''}</>
                 )}
               </p>
               <select
@@ -209,19 +209,19 @@ export function SearchPage() {
 
             {/* Error */}
             {isError && !isLoading && (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <AlertCircle size={40} className="text-gray-300 mb-4" />
-                <h3 className="font-semibold text-gray-700 mb-1">Erro ao carregar petsitters</h3>
-                <p className="text-sm text-gray-400">Verifique se a API está rodando em localhost:3000</p>
+              <div className="card flex flex-col items-center justify-center py-20 text-center">
+                <AlertCircle size={40} className="text-stroke mb-4" />
+                <h3 className="font-heading font-semibold text-ink mb-1">Erro ao carregar petsitters</h3>
+                <p className="text-sm text-muted">Verifique se a API está rodando em localhost:3000</p>
               </div>
             )}
 
             {/* Empty */}
             {!isLoading && !isError && petsitters.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="card flex flex-col items-center justify-center py-20 text-center">
                 <div className="text-5xl mb-4">🐾</div>
-                <h3 className="font-semibold text-gray-700 mb-1">Nenhum petsitter encontrado</h3>
-                <p className="text-sm text-gray-400 mb-6">Tente ajustar os filtros ou buscar em outra cidade</p>
+                <h3 className="font-heading font-semibold text-ink mb-1">Nenhum petsitter encontrado</h3>
+                <p className="text-sm text-muted mb-6">Tente ajustar os filtros ou buscar em outra cidade</p>
                 <div className="flex gap-3">
                   <button onClick={handleReset} className="btn-outline">Limpar filtros</button>
                   <button onClick={() => navigate('/match')} className="btn-primary">✨ Usar Match</button>

@@ -1,20 +1,22 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, ArrowRight, ArrowLeft, Clock, CalendarDays } from 'lucide-react'
+import { MapPin, LocateFixed, ArrowRight, ArrowLeft, Clock, CalendarDays, CheckCircle2, Wallet, Info, CheckCircle } from 'lucide-react'
 import { serviceLabels } from '@/utils'
+import { AmbientBlobs } from '@/components/ui/AmbientBlobs'
+import { StepProgress } from '@/components/ui/StepProgress'
 import type { ServiceType } from '@/types'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 
 // ── Constantes ─────────────────────────────────────────────────────────────────
 
-const SERVICES: { type: ServiceType; emoji: string }[] = [
-  { type: 'hospedagem',   emoji: '🏠' },
-  { type: 'passeio',      emoji: '🦮' },
-  { type: 'creche',       emoji: '🎾' },
-  { type: 'visita',       emoji: '🚪' },
-  { type: 'banho_e_tosa', emoji: '🛁' },
-  { type: 'adestramento', emoji: '🎓' },
+const SERVICES: { type: ServiceType; emoji: string; desc: string; ring: string; bg: string }[] = [
+  { type: 'hospedagem',   emoji: '🏠', desc: 'Cuidados dia e noite',   ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
+  { type: 'passeio',      emoji: '🦮', desc: 'Exercício diário',       ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
+  { type: 'creche',       emoji: '🎾', desc: 'Diversão de dia',        ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
+  { type: 'visita',       emoji: '🚪', desc: 'O cuidador vai até você', ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
+  { type: 'banho_e_tosa', emoji: '🛁', desc: 'Limpeza completa',       ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
+  { type: 'adestramento', emoji: '🎓', desc: 'Educação positiva',      ring: 'peer-checked:border-error-500',     bg: 'bg-error-50 text-error-600'         },
 ]
 
 const SPECIES_OPTIONS = [
@@ -41,15 +43,18 @@ function buildTimeOptions() {
 }
 const TIME_OPTIONS = buildTimeOptions()
 
-const BUDGET_SHORTCUTS = [
-  { label: 'Até R$50',  value: 50 },
-  { label: 'Até R$100', value: 100 },
-  { label: 'Até R$200', value: 200 },
+const BUDGET_TIERS = [
+  { max: 50,  text: 'Básico e acessível',        className: 'bg-stroke text-muted'          },
+  { max: 120, text: 'Faixa padrão da plataforma', className: 'bg-primary-100 text-primary-700' },
+  { max: 180, text: 'Cuidadores Premium',         className: 'bg-secondary-100 text-secondary-700' },
+  { max: 250, text: 'Serviço VIP & Certificados', className: 'bg-primary-800 text-white'      },
 ]
+function budgetTier(value: number) {
+  return BUDGET_TIERS.find(t => value <= t.max) ?? BUDGET_TIERS[BUDGET_TIERS.length - 1]
+}
 
-const TOTAL_STEPS = 5
-
-const STEP_LABELS = ['Serviço', 'Pet', 'Quando', 'Onde', 'Orçamento']
+const TOTAL_STEPS = 4
+const STEP_LABELS = ['Serviço', 'Localização e Data', 'Detalhes do Pet', 'Orçamento']
 
 // ── Componente ──────────────────────────────────────────────────────────────────
 
@@ -60,28 +65,29 @@ export function MatchWizard() {
   // Estado do wizard
   const [service,       setService]       = useState<ServiceType | ''>('')
   const [species,       setSpecies]       = useState<string>('')
+  const [notes,         setNotes]         = useState<string>('')
   const [date,          setDate]          = useState<string>('')
   const [startTime,     setStartTime]     = useState<string>('')
   const [endTime,       setEndTime]       = useState<string>('')
   const [endDate,       setEndDate]       = useState<string>('')
   const [city,          setCity]          = useState<string>('')
   const [neighborhood,  setNeighborhood]  = useState<string>('')
-  const [maxPrice,      setMaxPrice]      = useState<string>('')
+  const [maxPrice,      setMaxPrice]      = useState<string>('80')
 
   const isDaily = DAILY_SERVICES.includes(service as ServiceType)
+  const tier = budgetTier(Number(maxPrice) || 80)
 
   // ── Validação por passo ───────────────────────────────────────────────────────
 
   const handleNext = () => {
     if (step === 1 && !service)  return toast.error('Selecione um serviço!')
-    if (step === 2 && !species)  return toast.error('Selecione a espécie do seu pet!')
-    if (step === 3 && !date)     return toast.error('Informe a data do serviço!')
-    if (step === 4 && !city)     return toast.error('Informe sua cidade!')
+    if (step === 2 && !city)     return toast.error('Informe sua cidade!')
+    if (step === 2 && !date)     return toast.error('Informe a data do serviço!')
+    if (step === 3 && !species)  return toast.error('Selecione a espécie do seu pet!')
 
     if (step < TOTAL_STEPS) {
       setStep(s => s + 1)
     } else {
-      // Montar params e navegar
       const params = new URLSearchParams()
       params.append('service', service)
       params.append('species', species)
@@ -101,256 +107,88 @@ export function MatchWizard() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-start justify-center py-12 px-4">
-      <div className="w-full max-w-2xl">
-
-        {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 text-sm font-semibold px-4 py-1.5 rounded-full mb-4">
-            ✨ Match Inteligente
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-            Encontre seu Match Perfeito
-          </h1>
-          <p className="text-gray-500">
-            Responda 5 perguntas — analisamos disponibilidade, localização e avaliações para você.
-          </p>
-        </div>
-
-        {/* Progress bar */}
-        <div className="flex items-center justify-between mb-8 px-1 relative">
-          <div className="absolute inset-x-0 top-4 h-1 bg-gray-200 rounded-full -z-10" />
-          <div
-            className="absolute left-0 top-4 h-1 bg-primary-500 rounded-full -z-10 transition-all duration-500"
-            style={{ width: `${((step - 1) / (TOTAL_STEPS - 1)) * 100}%` }}
-          />
-          {STEP_LABELS.map((label, i) => {
-            const num = i + 1
-            const done = step > num
-            const active = step === num
-            return (
-              <div key={num} className="flex flex-col items-center gap-1.5">
-                <div className={clsx(
-                  'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 border-2',
-                  done   ? 'bg-primary-500 border-primary-500 text-white shadow-md' :
-                  active ? 'bg-white border-primary-500 text-primary-600 shadow-md' :
-                           'bg-white border-gray-200 text-gray-400',
-                )}>
-                  {done ? '✓' : num}
-                </div>
-                <span className={clsx(
-                  'hidden sm:block text-xs font-medium transition-colors',
-                  active ? 'text-primary-600' : done ? 'text-primary-400' : 'text-gray-400',
-                )}>
-                  {label}
-                </span>
-              </div>
-            )
-          })}
-        </div>
+    <div className="relative min-h-screen bg-background flex items-start justify-center py-16 px-4 overflow-hidden">
+      <AmbientBlobs />
+      <div className="relative z-10 w-full max-w-2xl">
 
         {/* Card principal */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="p-8 min-h-[340px] flex flex-col">
+        <div className="bg-white rounded-[2rem] shadow-xl p-6 sm:p-10 flex flex-col gap-8">
+
+          <StepProgress step={step} totalSteps={TOTAL_STEPS} label={STEP_LABELS[step - 1]} />
+
+          <div className="min-h-[360px] flex flex-col">
 
             {/* ── Passo 1 — Serviço ─────────────────────────────── */}
             {step === 1 && (
-              <div className="flex-1 animate-in fade-in slide-in-from-right-4 duration-300">
-                <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">
-                  Qual serviço você precisa?
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {SERVICES.map(({ type, emoji }) => (
-                    <button
-                      key={type}
-                      onClick={() => setService(type)}
-                      className={clsx(
-                        'p-4 rounded-2xl border-2 text-center transition-all hover:shadow-sm group',
-                        service === type
-                          ? 'border-primary-500 bg-primary-50 shadow-sm'
-                          : 'border-gray-200 hover:border-primary-200',
-                      )}
-                    >
-                      <span className="block text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">
-                        {emoji}
-                      </span>
-                      <span className={clsx(
-                        'font-semibold text-sm',
-                        service === type ? 'text-primary-700' : 'text-gray-700',
-                      )}>
-                        {serviceLabels[type]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Passo 2 — Espécie ─────────────────────────────── */}
-            {step === 2 && (
-              <div className="flex-1 animate-in fade-in slide-in-from-right-4 duration-300">
-                <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">
-                  Qual a espécie do seu pet?
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {SPECIES_OPTIONS.map(s => (
-                    <button
-                      key={s.value}
-                      onClick={() => setSpecies(s.value)}
-                      className={clsx(
-                        'p-4 rounded-2xl border-2 text-center transition-all hover:shadow-sm group',
-                        species === s.value
-                          ? 'border-primary-500 bg-primary-50 shadow-sm'
-                          : 'border-gray-200 hover:border-primary-200',
-                      )}
-                    >
-                      <span className="block text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">
-                        {s.icon}
-                      </span>
-                      <span className={clsx(
-                        'font-semibold text-sm',
-                        species === s.value ? 'text-primary-700' : 'text-gray-700',
-                      )}>
-                        {s.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ── Passo 3 — Quando ──────────────────────────────── */}
-            {step === 3 && (
-              <div className="flex-1 flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex-1 flex flex-col gap-6">
                 <div className="text-center">
-                  <h2 className="text-xl font-bold text-gray-800 mb-1">Quando você precisa?</h2>
-                  <p className="text-sm text-gray-500">
-                    {isDaily
-                      ? 'Informe o período de hospedagem'
-                      : 'Informe a data e horário do serviço'}
-                  </p>
+                  <h1 className="font-heading text-3xl font-bold text-ink mb-1">O que seu pet precisa hoje?</h1>
+                  <p className="text-muted">Selecione o serviço principal para encontrarmos o cuidador ideal.</p>
                 </div>
-
-                {isDaily ? (
-                  /* Por diária: data de entrada + saída */
-                  <div className="grid sm:grid-cols-2 gap-4 max-w-md mx-auto w-full">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        <CalendarDays size={14} className="inline mr-1 text-primary-500" />
-                        Data de entrada
-                      </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {SERVICES.map(({ type, emoji, desc, ring, bg }) => (
+                    <label key={type} className="relative cursor-pointer group">
                       <input
-                        id="match-date-entrada"
-                        type="date"
-                        min={today}
-                        value={date}
-                        onChange={e => setDate(e.target.value)}
-                        className="input-field w-full"
+                        type="radio"
+                        name="service"
+                        checked={service === type}
+                        onChange={() => setService(type)}
+                        className="peer sr-only"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        <CalendarDays size={14} className="inline mr-1 text-primary-500" />
-                        Data de saída
-                      </label>
-                      <input
-                        id="match-date-saida"
-                        type="date"
-                        min={date || today}
-                        value={endDate}
-                        onChange={e => setEndDate(e.target.value)}
-                        className="input-field w-full"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  /* Por hora: data + horário início + fim */
-                  <div className="flex flex-col gap-4 max-w-md mx-auto w-full">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                        <CalendarDays size={14} className="inline mr-1 text-primary-500" />
-                        Data do serviço
-                      </label>
-                      <input
-                        id="match-date"
-                        type="date"
-                        min={today}
-                        value={date}
-                        onChange={e => setDate(e.target.value)}
-                        className="input-field w-full"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                          <Clock size={14} className="inline mr-1 text-primary-500" />
-                          Horário início
-                        </label>
-                        <select
-                          id="match-start-time"
-                          value={startTime}
-                          onChange={e => setStartTime(e.target.value)}
-                          className="input-field w-full"
-                        >
-                          <option value="">Selecione</option>
-                          {TIME_OPTIONS.map(t => (
-                            <option key={t} value={t}>{t}</option>
-                          ))}
-                        </select>
+                      <div className={clsx(
+                        'h-full flex flex-col items-center justify-center p-4 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:bg-background',
+                        ring,
+                      )}>
+                        <div className={clsx('w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2', bg)}>
+                          {emoji}
+                        </div>
+                        <span className="font-semibold text-sm text-ink text-center">{serviceLabels[type]}</span>
+                        <span className="text-xs text-muted text-center mt-0.5">{desc}</span>
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                          <Clock size={14} className="inline mr-1 text-primary-500" />
-                          Horário fim
-                        </label>
-                        <select
-                          id="match-end-time"
-                          value={endTime}
-                          onChange={e => setEndTime(e.target.value)}
-                          className="input-field w-full"
-                        >
-                          <option value="">Selecione</option>
-                          {TIME_OPTIONS.filter(t => !startTime || t > startTime).map(t => (
-                            <option key={t} value={t}>{t}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── Passo 4 — Onde ────────────────────────────────── */}
-            {step === 4 && (
-              <div className="flex-1 flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="text-center">
-                  <h2 className="text-xl font-bold text-gray-800 mb-1">Onde você está?</h2>
-                  <p className="text-sm text-gray-500">
-                    Quanto mais preciso, melhor o match de proximidade.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-4 max-w-md mx-auto w-full">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      <MapPin size={14} className="inline mr-1 text-primary-500" />
-                      Cidade
+                      {service === type && (
+                        <CheckCircle2 size={20} className="absolute top-2 right-2 text-primary-600" fill="white" />
+                      )}
                     </label>
-                    <input
-                      id="match-city"
-                      type="text"
-                      value={city}
-                      onChange={e => setCity(e.target.value)}
-                      placeholder="Ex: São Paulo"
-                      className="input-field w-full"
-                      autoFocus
-                    />
-                  </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Passo 2 — Localização e Data ──────────────────── */}
+            {step === 2 && (
+              <div className="flex-1 flex flex-col gap-6">
+                <div className="text-center">
+                  <h1 className="font-heading text-3xl font-bold text-ink mb-1">Onde e quando?</h1>
+                  <p className="text-muted">Conte pra gente onde seu pet precisa de cuidado e as datas certinhas.</p>
+                </div>
+
+                <div className="flex flex-col gap-5 max-w-md mx-auto w-full">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      <MapPin size={14} className="inline mr-1 text-gray-400" />
-                      Bairro{' '}
-                      <span className="text-gray-400 font-normal">(opcional, melhora o resultado)</span>
+                    <label className="label" htmlFor="match-city">Localização</label>
+                    <div className="relative">
+                      <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+                      <input
+                        id="match-city"
+                        type="text"
+                        value={city}
+                        onChange={e => setCity(e.target.value)}
+                        placeholder="Digite sua cidade..."
+                        className="input-field pl-11 pr-32"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => toast('Detecção automática em breve! 📍')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-primary-600 bg-background px-3 py-2 rounded-pill transition-colors"
+                      >
+                        <LocateFixed size={14} /> Usar atual
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="label" htmlFor="match-neighborhood">
+                      Bairro <span className="text-muted font-normal">(opcional)</span>
                     </label>
                     <input
                       id="match-neighborhood"
@@ -358,105 +196,188 @@ export function MatchWizard() {
                       value={neighborhood}
                       onChange={e => setNeighborhood(e.target.value)}
                       placeholder="Ex: Pinheiros, Copacabana..."
-                      className="input-field w-full"
+                      className="input-field"
                     />
+                  </div>
+
+                  {isDaily ? (
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="label" htmlFor="match-date-entrada">
+                          <CalendarDays size={14} className="inline mr-1 text-primary-500" /> Data de entrada
+                        </label>
+                        <input id="match-date-entrada" type="date" min={today} value={date}
+                          onChange={e => setDate(e.target.value)} className="input-field w-full" />
+                      </div>
+                      <div>
+                        <label className="label" htmlFor="match-date-saida">
+                          <CalendarDays size={14} className="inline mr-1 text-primary-500" /> Data de saída
+                        </label>
+                        <input id="match-date-saida" type="date" min={date || today} value={endDate}
+                          onChange={e => setEndDate(e.target.value)} className="input-field w-full" />
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="label" htmlFor="match-date">
+                          <CalendarDays size={14} className="inline mr-1 text-primary-500" /> Data do serviço
+                        </label>
+                        <input id="match-date" type="date" min={today} value={date}
+                          onChange={e => setDate(e.target.value)} className="input-field w-full" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="label" htmlFor="match-start-time">
+                            <Clock size={14} className="inline mr-1 text-primary-500" /> Início
+                          </label>
+                          <select id="match-start-time" value={startTime} onChange={e => setStartTime(e.target.value)} className="select-field w-full">
+                            <option value="">Selecione</option>
+                            {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label" htmlFor="match-end-time">
+                            <Clock size={14} className="inline mr-1 text-primary-500" /> Fim
+                          </label>
+                          <select id="match-end-time" value={endTime} onChange={e => setEndTime(e.target.value)} className="select-field w-full">
+                            <option value="">Selecione</option>
+                            {TIME_OPTIONS.filter(t => !startTime || t > startTime).map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Passo 3 — Detalhes do Pet ─────────────────────── */}
+            {step === 3 && (
+              <div className="flex-1 flex flex-col gap-6">
+                <div className="text-center">
+                  <h1 className="font-heading text-3xl font-bold text-ink mb-1">Quem vai receber cuidado?</h1>
+                  <p className="text-muted">Conte um pouco mais sobre o seu companheiro.</p>
+                </div>
+
+                <div className="max-w-md mx-auto w-full flex flex-col gap-6">
+                  <div>
+                    <label className="label mb-3">Tipo de Pet</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {SPECIES_OPTIONS.map(s => (
+                        <label key={s.value} className="relative cursor-pointer group">
+                          <input
+                            type="radio"
+                            name="species"
+                            checked={species === s.value}
+                            onChange={() => setSpecies(s.value)}
+                            className="peer sr-only"
+                          />
+                          <div className="h-full flex flex-col items-center justify-center p-3 bg-background rounded-2xl gap-1.5 transition-all duration-300 peer-checked:bg-secondary-100 peer-checked:-translate-y-1 hover:-translate-y-1">
+                            <span className="text-2xl">{s.icon}</span>
+                            <span className="text-xs font-semibold text-muted peer-checked:text-primary-800">{s.label}</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="label" htmlFor="match-notes">Observações Importantes</label>
+                    <textarea
+                      id="match-notes"
+                      rows={3}
+                      value={notes}
+                      onChange={e => setNotes(e.target.value)}
+                      placeholder="Alergias, medicamentos, medos (ex: fogos de artifício), ou comportamentos específicos..."
+                      className="w-full p-4 rounded-2xl bg-background border-2 border-transparent focus:border-primary-400 outline-none text-sm text-ink resize-none transition-all"
+                    />
+                    <p className="text-xs text-muted mt-1.5 px-1">
+                      Quanto mais detalhes, melhor o cuidador poderá atender às necessidades do seu pet.
+                    </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ── Passo 5 — Orçamento ───────────────────────────── */}
-            {step === 5 && (
-              <div className="flex-1 flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="text-center">
-                  <h2 className="text-xl font-bold text-gray-800 mb-1">Qual o seu orçamento?</h2>
-                  <p className="text-sm text-gray-500">
-                    {isDaily
-                      ? 'Valor máximo que deseja pagar por diária'
-                      : 'Valor máximo que deseja pagar por hora'}
+            {/* ── Passo 4 — Orçamento ───────────────────────────── */}
+            {step === 4 && (
+              <div className="flex-1 flex flex-col gap-6">
+                <div className="text-center flex flex-col items-center">
+                  <div className="w-14 h-14 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center mb-3">
+                    <Wallet size={26} />
+                  </div>
+                  <h1 className="font-heading text-2xl font-bold text-ink mb-1">Defina seu orçamento</h1>
+                  <p className="text-muted max-w-sm">
+                    Ajuste o valor que você está disposto a investir {isDaily ? 'por dia' : 'por hora'}.
                   </p>
                 </div>
-                <div className="flex flex-col items-center gap-5 max-w-xs mx-auto w-full">
-                  {/* Atalhos rápidos */}
-                  <div className="flex gap-2 flex-wrap justify-center">
-                    {BUDGET_SHORTCUTS.map(({ label, value }) => (
-                      <button
-                        key={value}
-                        onClick={() => setMaxPrice(String(value))}
-                        className={clsx(
-                          'px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all',
-                          maxPrice === String(value)
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-gray-200 text-gray-600 hover:border-primary-300',
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setMaxPrice('')}
-                      className={clsx(
-                        'px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all',
-                        maxPrice === ''
-                          ? 'border-primary-500 bg-primary-50 text-primary-700'
-                          : 'border-gray-200 text-gray-600 hover:border-primary-300',
-                      )}
-                    >
-                      Sem limite
-                    </button>
+
+                <div className="bg-background rounded-2xl p-6 sm:p-8 flex flex-col items-center gap-6 max-w-md mx-auto w-full">
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">
+                      Valor {isDaily ? 'diário' : 'por hora'} aproximado
+                    </span>
+                    <div className="flex items-baseline gap-1.5 text-primary-800">
+                      <span className="font-heading text-2xl font-bold">R$</span>
+                      <span className="font-heading text-4xl font-extrabold">{maxPrice || 80}</span>
+                    </div>
+                    <span className={clsx('text-xs font-semibold px-3 py-1 rounded-pill mt-1', tier.className)}>
+                      {tier.text}
+                    </span>
                   </div>
 
-                  {/* Ou valor manual */}
-                  <div className="w-full">
-                    <label className="block text-xs text-gray-400 text-center mb-2">
-                      ou digite um valor personalizado
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">R$</span>
-                      <input
-                        id="match-max-price"
-                        type="number"
-                        min="0"
-                        value={maxPrice}
-                        onChange={e => setMaxPrice(e.target.value)}
-                        placeholder="0"
-                        className="input-field pl-10 w-full text-center text-lg font-semibold"
-                      />
-                    </div>
+                  <input
+                    type="range"
+                    min={30}
+                    max={250}
+                    step={5}
+                    value={maxPrice || 80}
+                    onChange={e => setMaxPrice(e.target.value)}
+                    className="w-full accent-primary-600"
+                    aria-label="Orçamento"
+                  />
+                  <div className="flex justify-between w-full text-xs text-muted -mt-4">
+                    <span>R$ 30</span>
+                    <span>R$ 250+</span>
+                  </div>
+
+                  <div className="w-full bg-white p-4 rounded-2xl flex items-start gap-3 shadow-sm">
+                    <Info size={20} className="text-secondary-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-muted">
+                      Valores mais altos geralmente garantem acesso a cuidadores com avaliações excepcionais, certificações veterinárias ou serviços premium inclusos.
+                    </p>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Navegação */}
-            <div className="flex justify-between items-center mt-8 pt-5 border-t border-gray-100">
+            <div className="flex justify-between items-center mt-8 pt-6 border-t border-stroke">
               <button
                 onClick={() => setStep(s => s - 1)}
                 disabled={step === 1}
-                className="btn-secondary px-6 flex items-center gap-2 disabled:opacity-0 disabled:pointer-events-none transition-opacity"
+                className="btn-ghost px-5 flex items-center gap-2 disabled:opacity-0 disabled:pointer-events-none transition-opacity"
               >
                 <ArrowLeft size={18} /> Voltar
               </button>
-
-              <span className="text-xs text-gray-400 font-medium">{step} de {TOTAL_STEPS}</span>
 
               <button
                 onClick={handleNext}
                 className="btn-primary px-8 flex items-center gap-2"
               >
-                {step === TOTAL_STEPS ? '✨ Encontrar Match' : 'Próximo'}
-                {step < TOTAL_STEPS && <ArrowRight size={18} />}
+                {step === TOTAL_STEPS ? <>Finalizar Match <CheckCircle size={18} /></> : <>Continuar <ArrowRight size={18} /></>}
               </button>
             </div>
           </div>
         </div>
 
         {/* Link de busca manual */}
-        <p className="text-center text-sm text-gray-400 mt-5">
+        <p className="text-center text-sm text-muted mt-6">
           Prefere busca manual?{' '}
           <button
             onClick={() => navigate('/buscar')}
-            className="text-primary-600 hover:underline font-medium"
+            className="text-primary-600 hover:underline font-semibold"
           >
             Ver todos os petsitters →
           </button>

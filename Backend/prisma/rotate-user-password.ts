@@ -13,35 +13,35 @@ const adapter = new PrismaPg({
 const prisma = new PrismaClient({ adapter });
 
 /**
- * Script pontual: gera uma senha nova, forte e aleatória para um admin JÁ EXISTENTE
- * e grava só o hash no banco. A senha em texto plano só é impressa aqui, uma vez,
- * neste terminal — nunca é salva em arquivo nem enviada a lugar nenhum.
+ * Script pontual: gera uma senha nova, forte e aleatória para um usuário JÁ EXISTENTE
+ * (qualquer role) e grava só o hash no banco. A senha em texto plano só é impressa
+ * aqui, uma vez, neste terminal — nunca é salva em arquivo nem enviada a lugar nenhum.
  *
- * Uso: npx ts-node prisma/rotate-admin-password.ts [email]
- * Se omitir o email, usa admin@cuidapet.com.
+ * Uso: npx ts-node prisma/rotate-user-password.ts <email>
  */
 async function main() {
-  const email = process.argv[2] ?? 'admin@cuidapet.com';
+  const email = process.argv[2];
+  if (!email) {
+    console.error('Uso: npx ts-node prisma/rotate-user-password.ts <email>');
+    process.exitCode = 1;
+    return;
+  }
 
-  const admin = await prisma.user.findUnique({ where: { email } });
-  if (!admin) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
     console.error(`Nenhum usuário encontrado com o e-mail: ${email}`);
     process.exitCode = 1;
     return;
   }
-  if (admin.role !== 'admin') {
-    console.error(`O usuário ${email} não tem role 'admin' (role atual: ${admin.role}). Abortando.`);
-    process.exitCode = 1;
-    return;
-  }
 
-  const rawPassword = crypto.randomBytes(18).toString('base64url');
+  const rawPassword = crypto.randomBytes(9).toString('base64url');
   const passwordHash = await bcrypt.hash(rawPassword, 10);
 
   await prisma.user.update({ where: { email }, data: { password: passwordHash } });
 
   console.log('Senha trocada com sucesso.');
   console.log('Email:', email);
+  console.log('Role:', user.role);
   console.log('Senha nova (copie agora, não será mostrada de novo):', rawPassword);
 }
 

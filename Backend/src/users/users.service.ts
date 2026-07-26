@@ -130,6 +130,7 @@ export class UsersService {
         phone: true,
         cpf: true,
         avatar: true,
+        bio: true,
         role: true,
         createdAt: true,
       },
@@ -165,7 +166,9 @@ export class UsersService {
         name: true,
         email: true,
         phone: true,
+        cpf: true,
         avatar: true,
+        bio: true,
         role: true,
       },
     });

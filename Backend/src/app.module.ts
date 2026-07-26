@@ -13,6 +13,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { ChatModule } from './chat/chat.module';
 import { LocationCheckInsModule } from './location-checkins/location-checkins.module';
+import { SupportMessagesModule } from './support-messages/support-messages.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { LocationCheckInsModule } from './location-checkins/location-checkins.mo
     ReviewsModule,
     ChatModule,
     LocationCheckInsModule,
+    SupportMessagesModule,
   ],
   controllers: [AppController],
   providers: [

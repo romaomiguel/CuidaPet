@@ -7,6 +7,7 @@ export interface User {
   email: string
   phone?: string
   cpf?: string
+  bio?: string
   avatar?: string
   /** Signed URL (curta duração) pra exibir o avatar — computada pelo backend a cada
    * resposta; `avatar` é só o path interno no Storage, não é diretamente renderizável. */
@@ -32,7 +33,7 @@ export interface RegisterPayload {
   email: string
   password: string
   role: UserRole
-  cpf: string
+  cpf?: string
   phone?: string
 }
 
@@ -213,6 +214,24 @@ export interface LocationCheckIn {
   latitude: number
   longitude: number
   createdAt: string
+}
+
+// ─── Central de Ajuda — mensagens de suporte ───────────────────────────────────
+export interface SupportMessage {
+  id: string
+  name: string
+  email: string
+  contact?: string
+  question: string
+  resolved: boolean
+  createdAt: string
+}
+
+export interface SupportMessagePayload {
+  name: string
+  email: string
+  contact?: string
+  question: string
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────

@@ -51,17 +51,17 @@ export function PublicLayout() {
 
   const chatBadge = unreadCount > 0 ? unreadCount : undefined
 
+  // Pets e agendamentos agora vivem como abas dentro de "Minha conta" — não precisam de
+  // entrada própria aqui. Chat ganha atalho direto porque é a ação mais frequente.
   const tutorLinks = [
-    { to: '/conta',        icon: <User size={15} />,          label: 'Minha conta'  },
-    { to: '/pets',         icon: <PawPrint size={15} />,      label: 'Meus pets'    },
-    { to: '/agendamentos', icon: <CalendarDays size={15} />,  label: 'Agendamentos' },
-    { to: '/mensagens',    icon: <MessageCircle size={15} />, label: 'Chats', badge: chatBadge },
+    { to: '/conta',                icon: <User size={15} />,          label: 'Minha conta' },
+    { to: '/conta?tab=mensagens',  icon: <MessageCircle size={15} />, label: 'Chat', badge: chatBadge },
   ]
+  // Painel/Agendamentos e Perfil agora vivem no mesmo hub — mesma ideia do tutor.
   const petsitterLinks = [
-    { to: '/dashboard/petsitter',                    icon: <LayoutDashboard size={15} />, label: 'Painel'       },
-    { to: '/dashboard/petsitter?tab=agendamentos',   icon: <CalendarDays size={15} />,    label: 'Agendamentos' },
-    { to: '/mensagens',                              icon: <MessageCircle size={15} />,   label: 'Chats', badge: chatBadge },
-    { to: '/dashboard/petsitter/perfil',             icon: <User size={15} />,            label: 'Meu perfil'   },
+    { to: '/dashboard/petsitter',                icon: <CalendarDays size={15} />,    label: 'Agendamentos' },
+    { to: '/dashboard/petsitter?tab=mensagens',  icon: <MessageCircle size={15} />,   label: 'Chat', badge: chatBadge },
+    { to: '/dashboard/petsitter?tab=perfil',     icon: <User size={15} />,            label: 'Minha conta' },
   ]
   const adminLinks: typeof tutorLinks = [
     { to: '/admin',            icon: <LayoutDashboard size={15} />, label: 'Painel Admin', badge: undefined },
@@ -76,20 +76,17 @@ export function PublicLayout() {
       {/* ─── Navbar ─────────────────────────────────────── */}
       <header className="fixed top-0 inset-x-0 z-40 bg-white border-b border-stroke shadow-navbar">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
 
             {/* ─── Área Esquerda: Logo ─── */}
             <div className="flex items-center min-w-max">
-              <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
+              <Link to="/" className="flex items-center flex-shrink-0 group">
                 <img
                   src="/logo.png"
                   alt="CuidaPet"
-                  className="h-10 w-auto group-hover:scale-105 transition-transform duration-300"
+                  className="h-14 sm:h-16 w-auto group-hover:scale-105 transition-transform duration-300"
                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                 />
-                <span className="text-2xl font-extrabold text-ink tracking-tight" style={{ fontFamily: 'system-ui, sans-serif' }}>
-                  Cuida<span className="text-primary-500">Pet</span>
-                </span>
               </Link>
             </div>
 
@@ -221,13 +218,12 @@ export function PublicLayout() {
         )}
       </header>
 
-      <main className="flex-1 pt-16"><Outlet /></main>
+      <main className="flex-1 pt-20"><Outlet /></main>
 
       <footer className="bg-white border-t border-stroke py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="CuidaPet" className="h-7 w-auto" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }} />
-            <span className="font-semibold text-ink">Cuida<span className="text-primary-600">Pet</span></span>
+            <img src="/logo.png" alt="CuidaPet" className="h-9 w-auto" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }} />
             <span>— Cuidado para seu melhor amigo</span>
           </div>
           <p>© {new Date().getFullYear()} CuidaPet. Todos os direitos reservados.</p>

@@ -5,8 +5,10 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  MaxLength,
   Matches,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
@@ -35,6 +37,10 @@ export class CreateUserDto {
   phone?: string;
 
   @ApiPropertyOptional({ description: 'CPF do usuário (Formato: XXX.XXX.XXX-XX)' })
+  // `@IsOptional()` só pula a validação para `undefined`/`null` — string vazia ainda
+  // cai no `@Matches` e falha. O front pode mandar '' (ex.: campo limpo no formulário),
+  // então normaliza pra `undefined` antes das validações rodarem.
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsOptional()
   @IsString()
   @Matches(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, {
@@ -49,4 +55,10 @@ export class CreateUserDto {
   @IsEnum(Role)
   @IsNotEmpty()
   role: Role;
+
+  @ApiPropertyOptional({ description: 'Breve descrição sobre o usuário e/ou seus pets' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, { message: 'A bio deve ter no máximo 500 caracteres' })
+  bio?: string;
 }

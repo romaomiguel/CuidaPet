@@ -46,6 +46,7 @@ model User {
   phone     String?
   cpf       String?  @unique
   avatar    String?
+  bio       String?
   role      Role
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -165,6 +166,18 @@ model LocationCheckIn {
   createdAt DateTime @default(now())
 
   @@index([bookingId, createdAt])
+}
+
+model SupportMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  contact   String?
+  question  String
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([resolved, createdAt])
 }
 
 model RefreshToken {

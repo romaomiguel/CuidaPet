@@ -2,25 +2,23 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar }   from '@/components/layout/Sidebar'
 import { Navbar }    from '@/components/layout/Navbar'
-import type { UserRole } from '@/types'
-
-interface DashboardLayoutProps {
-  role: UserRole
-}
+import { useAuthStore } from '@/store/auth.store'
 
 /**
  * DashboardLayout — full app shell with sidebar + top navbar.
+ * Nav items adapt to the logged-in user's role automatically.
  * On mobile the sidebar collapses to an off-canvas drawer toggled by the Navbar.
  */
-export function DashboardLayout({ role }: DashboardLayoutProps) {
+export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { user } = useAuthStore()
 
   return (
     <div className="min-h-screen bg-background flex">
 
       {/* ── Sidebar ── */}
       <Sidebar
-        role={role}
+        role={user?.role ?? 'tutor'}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
@@ -35,7 +33,7 @@ export function DashboardLayout({ role }: DashboardLayoutProps) {
       )}
 
       {/* ── Main area ── */}
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-72">
         {/* Top navbar */}
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
 

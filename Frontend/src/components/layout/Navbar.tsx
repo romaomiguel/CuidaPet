@@ -1,9 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Menu, Bell, LogOut, User, ChevronDown } from 'lucide-react'
+import { Menu, LogOut, User, ChevronDown, Search, MessageCircle, CalendarDays } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth.store'
 import { authService }  from '@/services/auth.service'
 import { avatarUrl }    from '@/utils'
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown'
 import toast from 'react-hot-toast'
 
 interface NavbarProps {
@@ -43,66 +44,62 @@ export function Navbar({ onMenuClick }: NavbarProps) {
 
   if (!user) return null
 
-  const profileHref =
-    user.role === 'petsitter'
-      ? '/dashboard/petsitter/perfil'
-      : '/dashboard/perfil'
+  const isPetsitter = user.role === 'petsitter'
+  const profileHref = isPetsitter ? '/dashboard/petsitter?tab=perfil' : '/conta'
+  const messagesHref = isPetsitter ? '/dashboard/petsitter?tab=mensagens' : '/conta?tab=mensagens'
 
   return (
-    <header className="sticky top-0 z-30 glass border-b border-gray-100 shadow-sm">
-      <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+    <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-stroke">
+      <div className="flex items-center justify-between h-20 px-4 sm:px-6 gap-4">
 
-        {/* Left — hamburger + logo */}
-        <div className="flex items-center gap-3">
+        {/* Left — hamburger + busca */}
+        <div className="flex items-center gap-3 flex-1">
           <button
             id="sidebar-toggle"
             onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all"
+            className="lg:hidden p-2 rounded-full text-muted hover:text-ink hover:bg-background transition-all flex-shrink-0"
             aria-label="Abrir menu"
           >
             <Menu size={20} />
           </button>
 
-          {/* Mobile-only logo */}
-          <Link to="/" className="lg:hidden flex items-center gap-1.5">
-            <span className="text-xl">🐾</span>
-            <span className="font-bold text-gray-900">CuidaPet</span>
+          <Link to="/" className="lg:hidden flex items-center flex-shrink-0">
+            <img src="/logo.png" alt="CuidaPet" className="h-12 w-auto" />
+          </Link>
+
+          <Link
+            to="/buscar"
+            className="hidden md:flex items-center gap-2 bg-background rounded-pill px-4 py-2.5 w-full max-w-sm text-sm text-muted hover:bg-stroke/60 transition-colors"
+          >
+            <Search size={16} /> Buscar cuidadores ou serviços...
           </Link>
         </div>
 
         {/* Right — actions + user */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
 
-          {/* Notifications (placeholder) */}
-          <button
-            className="relative p-2 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-all"
-            aria-label="Notificações"
-          >
-            <Bell size={20} />
-            {/* Unread dot */}
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary-500" />
-          </button>
+          <NotificationDropdown />
 
           {/* User dropdown */}
           <div ref={dropdownRef} className="relative">
             <button
               id="user-menu-button"
               onClick={() => setDropdownOpen((v) => !v)}
-              className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-xl hover:bg-gray-100 transition-all"
+              className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-pill hover:bg-background transition-all"
               aria-haspopup="true"
               aria-expanded={dropdownOpen}
             >
               <img
                 src={avatarUrl(user.name, user.avatarUrl ?? undefined)}
                 alt={user.name}
-                className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-200"
+                className="avatar-framed w-8 h-8"
               />
-              <span className="hidden sm:block text-sm font-semibold text-gray-800 max-w-[120px] truncate">
+              <span className="hidden sm:block text-sm font-semibold text-ink max-w-[120px] truncate">
                 {user.name.split(' ')[0]}
               </span>
               <ChevronDown
                 size={14}
-                className={`text-gray-400 transition-transform duration-200 ${
+                className={`text-muted transition-transform duration-200 ${
                   dropdownOpen ? 'rotate-180' : ''
                 }`}
               />
@@ -110,28 +107,50 @@ export function Navbar({ onMenuClick }: NavbarProps) {
 
             {/* Dropdown menu */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-card-hover border border-gray-100 py-1 animate-scale-in z-50">
+              <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-card-hover border border-stroke py-1.5 animate-scale-in z-50">
                 {/* User info header */}
-                <div className="px-4 py-3 border-b border-gray-50">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+                <div className="px-4 py-3 border-b border-stroke">
+                  <p className="text-sm font-semibold text-ink truncate">{user.name}</p>
                   <p className="text-xs text-muted truncate">{user.email}</p>
-                  <span className="mt-1 inline-block badge badge-green capitalize">
+                  <span className="mt-1 inline-block badge badge-blue capitalize">
                     {user.role === 'petsitter' ? 'Petsitter' : 'Tutor'}
                   </span>
                 </div>
 
+                {isPetsitter && (
+                  <Link
+                    to="/dashboard/petsitter"
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted hover:bg-background transition-colors"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <CalendarDays size={15} className="text-muted" />
+                    Agendamentos
+                  </Link>
+                )}
+
                 <Link
                   to={profileHref}
-                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted hover:bg-background transition-colors"
                   onClick={() => setDropdownOpen(false)}
                 >
-                  <User size={15} className="text-gray-400" />
+                  <User size={15} className="text-muted" />
                   Meu perfil
                 </Link>
 
+                {user.role !== 'admin' && (
+                  <Link
+                    to={messagesHref}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted hover:bg-background transition-colors"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <MessageCircle size={15} className="text-muted" />
+                    Mensagens
+                  </Link>
+                )}
+
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-b-2xl"
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-error-500 hover:bg-error-50 transition-colors rounded-b-2xl"
                 >
                   <LogOut size={15} />
                   Sair

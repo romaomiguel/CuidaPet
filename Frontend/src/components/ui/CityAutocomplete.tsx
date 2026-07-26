@@ -10,13 +10,13 @@ interface CityAutocompleteProps {
   icon?: React.ReactNode;
 }
 
-export function CityAutocomplete({ 
-  value, 
-  onChange, 
-  cities, 
-  placeholder = "Buscar cidade...", 
+export function CityAutocomplete({
+  value,
+  onChange,
+  cities,
+  placeholder = "Buscar cidade...",
   className = "",
-  icon = <MapPin size={16} className="text-gray-400 flex-shrink-0" />
+  icon = <MapPin size={16} className="text-muted flex-shrink-0" />
 }: CityAutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState(value);
@@ -54,10 +54,10 @@ export function CityAutocomplete({
           }
         }}
         onFocus={() => setIsOpen(true)}
-        className="flex-1 text-sm text-gray-800 placeholder-gray-400 outline-none bg-transparent w-full"
+        className="flex-1 text-sm text-ink placeholder:text-muted outline-none bg-transparent w-full"
       />
       {isOpen && filteredCities.length > 0 && (
-        <ul className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] max-h-60 overflow-y-auto custom-scrollbar py-1">
+        <ul className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-stroke rounded-2xl shadow-card-hover max-h-60 overflow-y-auto custom-scrollbar py-1">
           {filteredCities.map((city) => (
             <li
               key={city}
@@ -68,7 +68,7 @@ export function CityAutocomplete({
                 onChange(city);
                 setIsOpen(false);
               }}
-              className="px-4 py-2.5 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary-700 cursor-pointer transition-colors"
+              className="px-4 py-2.5 text-sm text-ink hover:bg-background hover:text-primary-700 cursor-pointer transition-colors"
             >
               {city}
             </li>
@@ -76,7 +76,7 @@ export function CityAutocomplete({
         </ul>
       )}
       {isOpen && search !== '' && filteredCities.length === 0 && (
-         <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg p-4 text-center text-sm text-gray-500">
+         <div className="absolute z-50 top-full left-0 right-0 mt-2 bg-white border border-stroke rounded-2xl shadow-card-hover p-4 text-center text-sm text-muted">
            Nenhuma cidade encontrada
          </div>
       )}
