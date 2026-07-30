@@ -87,6 +87,10 @@ model PetsitterProfile {
   addressProof   String?
   acceptedSpecies PetSpecies[]
   offersLocationSharing Boolean @default(false)
+  hasAirConditioning    Boolean @default(false)
+  homeType              String? // "casa" | "apartamento"
+  hasBackyard           Boolean @default(false)
+  walkSchedule          String? // "manha" | "noite" — horário preferido de passeio
 }
 
 model Pet {
@@ -99,6 +103,10 @@ model Pet {
   age       Int
   weight    Float?
   notes     String?
+  energyLevel          String? // "baixo" | "medio" | "alto"
+  socialLevel          String? // "exclusivo" | "sociavel"
+  medicalRestrictions  String?
+  feedingInstructions  String?
   photo     String?
   createdAt DateTime   @default(now())
 
