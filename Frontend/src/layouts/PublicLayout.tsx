@@ -82,9 +82,9 @@ export function PublicLayout() {
             <div className="flex items-center min-w-max">
               <Link to="/" className="flex items-center flex-shrink-0 group">
                 <img
-                  src="/logo.png"
-                  alt="CuidaPet"
-                  className="h-14 sm:h-16 w-auto group-hover:scale-105 transition-transform duration-300"
+                  src="/logo-horizontal-texto.png"
+                  alt="PetUno"
+                  className="h-20 w-auto group-hover:scale-105 transition-transform duration-300"
                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                 />
               </Link>
@@ -92,16 +92,16 @@ export function PublicLayout() {
 
             {/* ─── Área Central: Navegação ─── */}
             <nav className="hidden md:flex flex-1 justify-center items-center gap-6 lg:gap-10">
-              <Link to="/buscar" className="text-sm font-medium text-muted hover:text-secondary-500 transition-colors whitespace-nowrap">
+              <Link to="/buscar" className="text-base font-medium text-muted hover:text-secondary-500 transition-colors whitespace-nowrap">
                 Encontrar petsitter
               </Link>
-              <Link to="/" className="text-sm font-medium text-muted hover:text-secondary-500 transition-colors whitespace-nowrap" onClick={() => window.scrollTo(0, 1000)}>
+              <Link to="/" className="text-base font-medium text-muted hover:text-secondary-500 transition-colors whitespace-nowrap" onClick={() => window.scrollTo(0, 1000)}>
                 Como funciona
               </Link>
-              <Link to="/ajuda" className="text-sm font-medium text-muted hover:text-secondary-500 transition-colors whitespace-nowrap">
+              <Link to="/ajuda" className="text-base font-medium text-muted hover:text-secondary-500 transition-colors whitespace-nowrap">
                 Ajuda
               </Link>
-              <Link to="/cadastro" className="text-sm font-medium text-muted hover:text-secondary-500 transition-colors whitespace-nowrap">
+              <Link to="/cadastro" className="text-base font-medium text-muted hover:text-secondary-500 transition-colors whitespace-nowrap">
                 Quero ser Petsitter
               </Link>
             </nav>
@@ -170,7 +170,7 @@ export function PublicLayout() {
               ) : (
                 <Link 
                   to="/login" 
-                  className="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium text-muted hover:text-primary-600 transition-colors"
+                  className="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-base font-medium text-muted hover:text-primary-600 transition-colors"
                 >
                   Criar conta ou entrar
                 </Link>
@@ -223,10 +223,10 @@ export function PublicLayout() {
       <footer className="bg-white border-t border-stroke py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="CuidaPet" className="h-9 w-auto" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }} />
+            <img src="/logo-imagem.png" alt="PetUno" className="h-9 w-auto" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none' }} />
             <span>— Cuidado para seu melhor amigo</span>
           </div>
-          <p>© {new Date().getFullYear()} CuidaPet. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} PetUno. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

@@ -68,7 +68,7 @@ export function LoginPage() {
       <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
         <div className="mb-8">
           <h1 className="font-heading text-4xl font-extrabold text-ink mb-1">Login</h1>
-          <p className="text-muted">Insira seus dados para acessar sua conta CuidaPet.</p>
+          <p className="text-muted">Insira seus dados para acessar sua conta PetUno.</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>

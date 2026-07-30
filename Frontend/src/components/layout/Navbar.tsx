@@ -64,7 +64,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
           </button>
 
           <Link to="/" className="lg:hidden flex items-center flex-shrink-0">
-            <img src="/logo.png" alt="CuidaPet" className="h-12 w-auto" />
+            <img src="/logo-horizontal-texto.png" alt="PetUno" className="h-14 w-auto" />
           </Link>
 
           <Link

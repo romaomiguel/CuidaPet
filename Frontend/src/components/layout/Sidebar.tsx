@@ -85,8 +85,11 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
     >
       {/* ── Header ── */}
       <div className="flex items-center justify-between h-20 px-6 flex-shrink-0">
-        <Link to="/" className="flex items-center" onClick={onClose}>
-          <img src="/logo.png" alt="CuidaPet" className="h-14 w-auto" />
+        <Link to="/" className="lg:hidden flex items-center flex-shrink-0">
+          <img src="/logo-imagem.png" alt="PetUno" className="h-12 w-auto" />
+        </Link>
+        <Link to="/" className="hidden lg:flex items-center flex-shrink-0">
+          <img src="/logo-horizontal-texto.png" alt="PetUno" className="h-16 w-auto max-w-[200px] object-contain" />
         </Link>
 
         {/* Close button — mobile only */}

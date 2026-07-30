@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-30T00:00:00.000Z",
+  "title": "Design System: PetUno",
+  "extensions": {
+    "colorMeta": {
+      "trust-blue": {
+        "role": "primary",
+        "displayName": "Deep Trust Blue",
+        "canonical": "#244F8C",
+        "tonalRamp": ["#071328", "#003773", "#16315A", "#1D4073", "#244F8C", "#4E79A2", "#7A9AB9", "#A7BCD1", "#D3DDE8", "#E9EEF4"]
+      },
+      "golden-cheer": {
+        "role": "secondary",
+        "displayName": "Golden Cheer",
+        "canonical": "#FCC019",
+        "tonalRamp": ["#3D2E01", "#795C03", "#B68A04", "#F2A20C", "#FCC019", "#FDD65C", "#F2DFA7", "#FBE299", "#FDF1CC", "#FEF8E6"]
+      },
+      "surface": { "role": "neutral", "displayName": "Surface White", "canonical": "#FFFFFF" },
+      "canvas": { "role": "neutral", "displayName": "Warm Canvas", "canonical": "#FBF9F8" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#1B1C1C" },
+      "muted": { "role": "neutral", "displayName": "Muted Slate", "canonical": "#434750" },
+      "stroke": { "role": "neutral", "displayName": "Stroke Grey", "canonical": "#C3C6D1" },
+      "success": {
+        "role": "success",
+        "displayName": "Success Green",
+        "canonical": "#34C759",
+        "tonalRamp": ["#1E7E34", "#28A745", "#34C759", "#4ED976", "#68E692", "#8FEEB0", "#B7F5CE", "#C6F6D5", "#DEFBE9", "#F0FFF4"]
+      },
+      "error": {
+        "role": "error",
+        "displayName": "Guard Red",
+        "canonical": "#BA1A1A",
+        "tonalRamp": ["#690005", "#93000A", "#BA1A1A", "#D22E2E", "#E14B4B", "#EE6F6F", "#F79999", "#FFB4AB", "#FFC7C0", "#FFDAD6"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display / Headline / Title (Fredoka)", "purpose": "All headings via the base h1-h6 rule; see the Broken Heading Rule for the font-heading (Nunito Sans) caveat — that utility is applied to ~77% of real headings but the font is never loaded, so those instances silently fall back to system sans-serif instead of Fredoka." },
+      "body": { "displayName": "Body (Plus Jakarta Sans)", "purpose": "Default body copy and most UI text, set on the <body> element." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 4px 0 rgba(36,79,140,0.06), 0 4px 16px 0 rgba(36,79,140,0.06)", "purpose": "Resting elevation for cards." },
+      { "name": "card-hover", "value": "0 4px 12px 0 rgba(36,79,140,0.10), 0 16px 40px 0 rgba(36,79,140,0.09)", "purpose": "Hover/interactive elevation, paired with a -translate-y lift." },
+      { "name": "btn", "value": "0 2px 8px 0 rgba(36,79,140,0.20)", "purpose": "Resting shadow on primary/secondary pill buttons." },
+      { "name": "navbar", "value": "0 1px 0 0 #E6EEF5", "purpose": "Hairline separator under the fixed public navbar." }
+    ],
+    "motion": [
+      { "name": "fade-in", "value": "fadeIn 0.3s ease-out", "purpose": "Generic entrance for overlays/modals." },
+      { "name": "slide-up", "value": "slideUp 0.4s ease-out", "purpose": "Mobile menu / bottom-sheet entrance." },
+      { "name": "scale-in", "value": "scaleIn 0.2s ease-out", "purpose": "Dropdown menus and modal panels." },
+      { "name": "shimmer", "value": "shimmer 1.5s infinite linear", "purpose": "Skeleton loading placeholders." },
+      { "name": "tab-in", "value": "tabIn 0.25s ease-out", "purpose": "Tab-panel content transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action pill button (e.g. form submits, booking confirm).",
+      "html": "<button class=\"ds-btn-primary\">Confirmar</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 9999px; background: #1D4073; color: #fff; font-weight: 600; font-size: 14px; border: none; box-shadow: 0 2px 8px 0 rgba(36,79,140,0.20); transition: all 0.2s; } .ds-btn-primary:hover { background: #16315A; transform: scale(1.02); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #4E79A2; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "High-emphasis gold CTA — used sparingly, one per screen (Sparing Gold Rule).",
+      "html": "<button class=\"ds-btn-secondary\">Encontrar meu Match</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 20px; border-radius: 9999px; background: #FCC019; color: #003773; font-weight: 600; font-size: 14px; border: none; box-shadow: 0 2px 8px 0 rgba(252,192,25,0.25); transition: all 0.2s; } .ds-btn-secondary:hover { background: #FDD65C; transform: scale(1.02); } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #FDD65C; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Lower-emphasis secondary action alongside a primary button.",
+      "html": "<button class=\"ds-btn-outline\">Cancelar</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 19px; border-radius: 9999px; background: #fff; color: #244F8C; font-weight: 600; font-size: 14px; border: 2px solid #244F8C; transition: all 0.2s; } .ds-btn-outline:hover { background: #E9EEF4; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Standard pill text input with a visible resting border.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Buscar cuidadores...\" />",
+      "css": ".ds-input { width: 100%; padding: 12px 16px; border-radius: 9999px; background: #fff; color: #1B1C1C; font-size: 14px; border: 2px solid #C3C6D1; transition: all 0.2s; } .ds-input::placeholder { color: #434750; } .ds-input:focus { outline: none; border-color: #4E79A2; box-shadow: 0 0 0 4px #E9EEF4; }"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge-blue",
+      "description": "Small status/category pill; each variant is a same-hue 50/700 tint pair (Tinted-Pair Badge Rule).",
+      "html": "<span class=\"ds-badge\">Verificado</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: #E9EEF4; color: #1D4073; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Base raised surface — white, soft blue-tinted shadow, generous radius.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-title\">Maria Silva</h3><p class=\"ds-card-body\">Petsitter em Cuiabá — 4.9 ★ (32 avaliações)</p></div>",
+      "css": ".ds-card { background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 1px 4px 0 rgba(36,79,140,0.06), 0 4px 16px 0 rgba(36,79,140,0.06); transition: all 0.2s; } .ds-card-title { font-family: 'Fredoka', system-ui, sans-serif; font-weight: 700; color: #1B1C1C; margin: 0 0 4px; } .ds-card-body { font-size: 14px; color: #434750; margin: 0; }"
+    },
+    {
+      "name": "Toggle Switch",
+      "kind": "custom",
+      "refersTo": "toggle-switch",
+      "description": "iOS-style on/off switch used in settings/preferences.",
+      "html": "<button class=\"ds-toggle\" data-state=\"on\"><span class=\"ds-toggle-thumb\"></span></button>",
+      "css": ".ds-toggle { position: relative; display: inline-flex; align-items: center; height: 28px; width: 48px; border-radius: 9999px; background: #C3C6D1; border: none; cursor: pointer; transition: background 0.2s; padding: 0; } .ds-toggle[data-state='on'] { background: #244F8C; } .ds-toggle-thumb { display: inline-block; height: 20px; width: 20px; border-radius: 9999px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.15); transform: translateX(4px); transition: transform 0.2s; } .ds-toggle[data-state='on'] .ds-toggle-thumb { transform: translateX(24px); }"
+    },
+    {
+      "name": "Ambient Blobs",
+      "kind": "custom",
+      "refersTo": "ambient-blobs",
+      "description": "Signature decorative background device: three blurred pulsing color orbs behind auth/match-wizard content.",
+      "html": "<div class=\"ds-blobs\" aria-hidden=\"true\"><span class=\"ds-blob ds-blob-1\"></span><span class=\"ds-blob ds-blob-2\"></span><span class=\"ds-blob ds-blob-3\"></span></div>",
+      "css": ".ds-blobs { position: absolute; inset: 0; z-index: -10; overflow: hidden; pointer-events: none; } .ds-blob { position: absolute; border-radius: 9999px; filter: blur(64px); animation: ds-pulse 2s ease-in-out infinite; } .ds-blob-1 { top: -96px; left: -96px; height: 288px; width: 288px; background: rgba(167,188,209,0.4); } .ds-blob-2 { top: 33%; right: -80px; height: 256px; width: 256px; background: rgba(242,223,167,0.4); animation-delay: 1s; } .ds-blob-3 { bottom: -96px; left: 25%; height: 320px; width: 320px; background: rgba(211,221,232,0.5); animation-delay: 2s; } @keyframes ds-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Trusted Playdate",
+    "overview": "PetUno's visual system does one specific job: make a tutor comfortable leaving their pet with a stranger they met through an app. That's a trust problem before it's a marketplace problem, and the design solves it by pairing an institutional, dependable blue with a warm, cheerful gold — then softening every edge in the interface until nothing reads as a logistics dashboard. Every button, input, badge, and nav item is pill-shaped (rounded-pill, 9999px); cards are large and gently rounded (24-32px); backgrounds carry blurred organic blobs instead of hard geometric decoration. The result reads as a professional service you'd trust with your dog, not a corporate SaaS panel and not a cartoon.\n\nThe pairing is deliberate: Deep Trust Blue grounds the system as the structural, dependable color (navbars, primary actions, headings-on-dark), while Golden Cheer is used sparingly as the \"look here\" color — CTAs, active states, ratings, the one badge that matters. Confirmed anti-reference: PetUno should never read as cold, clinical, or corporate — no sharp corners, no flat enterprise-blue panels, no hard black shadows.",
+    "keyCharacteristics": [
+      "Pill-shaped everything: buttons, inputs, badges, chips, nav links, toggle switches.",
+      "Soft, blue-tinted ambient shadows — never pure black, never sharp-edged.",
+      "Organic blurred blob shapes and floating blurred orbs as background texture on hero, auth, and match surfaces.",
+      "Deep Trust Blue as structure/trust; Golden Cheer as sparing accent/action color.",
+      "Warm neutral canvas (#FBF9F8), not clinical white-on-white."
+    ],
+    "rules": [
+      { "name": "The Solid Icon Badge Rule", "body": "A small icon badge (~40-48px circle) needs a solid, saturated background (bg-primary-500) with a text-white icon, not a pale tint pair (bg-primary-100/text-primary-700) — at icon scale a thin-stroke icon on a low-chroma pale circle reads as washed out even when it technically passes a contrast checker.", "section": "colors" },
+      { "name": "The Explicit White Heading Rule", "body": "@layer base hardcodes h1-h6 { color: #1B1C1C } directly on the element selector. A parent's text-white does not cascade past this — every heading on a dark or colored section background needs its own explicit text-white class or it silently renders as near-black ink.", "section": "colors" },
+      { "name": "The Sparing Gold Rule", "body": "Golden Cheer marks the one action or state that should win the eye on a given screen. If more than one element on a screen competes in gold, the hierarchy has broken down.", "section": "colors" },
+      { "name": "The Tinted-Pair Badge Rule", "body": "Every badge variant is a {color}-50 background with {color}-700 text of the same hue family. Follow the existing hue family for a new badge variant; don't introduce a new tint formula.", "section": "colors" },
+      { "name": "The Broken Heading Rule (fix before extending)", "body": "font-heading is configured to Nunito Sans and applied to ~77% of headings, but Nunito Sans is never loaded, so those headings silently fall back to system sans-serif instead of Fredoka. Don't add new font-heading usages until this is resolved.", "section": "typography" },
+      { "name": "The No-Black-Shadow Rule", "body": "Every shadow in the system is tinted with the brand blue's rgba (rgba(36,79,140, …)), never neutral black.", "section": "elevation" },
+      { "name": "The Pill Rule", "body": "Every interactive control is fully pill-shaped: buttons, inputs, badges, chips, nav links, the iOS-style toggle switch. This is the single most load-bearing shape decision in the system.", "section": "shapes" },
+      { "name": "The Gradient Wave Rule", "body": "A wave divider's path fill is a linearGradient running from the current section's background color to the next section's, never a flat fill matching only the next color. The svg needs an explicit block class (inline SVGs reserve baseline whitespace like the classic gap-under-an-image bug, showing a stray pale seam line); the wrapper div needs a solid fallback bg-* matching the next section's color as a safety net for any residual sub-pixel gap.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do give every heading placed on a dark or colored section background its own explicit text-white class, per the Explicit White Heading Rule — never rely on inheritance from a parent.",
+      "Do keep every interactive control pill-shaped (rounded-pill). A rectangular or barely-rounded button/input is the clearest possible off-brand signal in this system.",
+      "Do treat Golden Cheer as scarce — one CTA or active state per screen, per the Sparing Gold Rule.",
+      "Do tint shadows with the brand blue's rgba, never plain black, per the No-Black-Shadow Rule.",
+      "Do use Trust Blue Deep (#003773) as text on Golden Cheer surfaces — the system's established high-contrast pairing.",
+      "Do use organic blob shapes or the AmbientBlobs component when a surface needs decorative background warmth."
+    ],
+    "donts": [
+      "Don't design anything that reads as cold, clinical, or corporate-SaaS — that's PetUno's explicitly confirmed anti-reference.",
+      "Don't build against dark: variants or reintroduce darkMode: 'class' in tailwind.config.ts without a deliberate decision to support a dark theme — PetUno is light-only by design.",
+      "Don't add more font-heading usage without first resolving the Broken Heading Rule.",
+      "Don't introduce a new badge tint formula — follow the Tinted-Pair Badge Rule."
+    ]
+  }
+}
