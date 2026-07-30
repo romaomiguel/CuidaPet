@@ -120,16 +120,9 @@ export class PetsittersService {
   async findMatches(params: MatchPetsittersDto) {
     const {
       service, species, city, neighborhood, date, startTime, endTime, maxPrice,
-      petId, needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType,
+      needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType,
+      petEnergyLevel, petSocialLevel,
     } = params;
-
-    let pet: { energyLevel: string | null; socialLevel: string | null } | null = null;
-    if (petId) {
-      pet = await this.prisma.pet.findUnique({
-        where: { id: petId },
-        select: { energyLevel: true, socialLevel: true },
-      });
-    }
 
     // Serviços que cobram por diária (hospedagem e creche)
     const DAILY_SERVICES = ['hospedagem', 'creche'];
@@ -283,18 +276,18 @@ export class PetsittersService {
       }
 
       // ── Compatibilidade do Pet (até 10pts) ─────────────────────────
-      if (pet?.energyLevel === 'alto' && profile.hasBackyard) {
+      if (petEnergyLevel === 'alto' && profile.hasBackyard) {
         score += 5;
         matchReasons.push('⚡ Espaço para gastar energia (pet de alta energia)');
       }
-      if (pet?.socialLevel === 'exclusivo' && profile.capacityPerDay === 1) {
+      if (petSocialLevel === 'exclusivo' && profile.capacityPerDay === 1) {
         score += 5;
         matchReasons.push('🐾 Cuidador atende um único pet por vez');
       }
 
       return {
         ...profile,
-        matchScore: Math.round(score),
+        matchScore: Math.min(100, Math.round(score)),
         matchReasons,
       };
     });
@@ -546,29 +539,51 @@ export class PetsittersService {
     userId: string,
     updatePetsitterProfileDto: UpdatePetsitterProfileDto,
   ) {
-    const data = {
-      bio: updatePetsitterProfileDto.bio ?? '',
-      pricePerHour: updatePetsitterProfileDto.pricePerHour ?? 50,
-      location: updatePetsitterProfileDto.location ?? '',
-      city: updatePetsitterProfileDto.city ?? '',
-      state: updatePetsitterProfileDto.state ?? '',
-      services: updatePetsitterProfileDto.services ?? [],
-      scheduleConfig: (updatePetsitterProfileDto.scheduleConfig ?? {}) as Prisma.InputJsonObject,
-      isAvailable: updatePetsitterProfileDto.isAvailable ?? true,
-      offersLocationSharing: updatePetsitterProfileDto.offersLocationSharing ?? false,
-      pricingConfig: (updatePetsitterProfileDto.pricingConfig ?? {}) as Prisma.InputJsonObject,
-      capacityPerDay: updatePetsitterProfileDto.capacityPerDay ?? 1,
-      acceptedSpecies: updatePetsitterProfileDto.acceptedSpecies ?? [],
-      hasAirConditioning: updatePetsitterProfileDto.hasAirConditioning ?? false,
-      homeType: updatePetsitterProfileDto.homeType,
-      hasBackyard: updatePetsitterProfileDto.hasBackyard ?? false,
-      walkSchedule: updatePetsitterProfileDto.walkSchedule,
+    const dto = updatePetsitterProfileDto;
+
+    const update = {
+      bio: dto.bio,
+      pricePerHour: dto.pricePerHour,
+      location: dto.location,
+      city: dto.city,
+      state: dto.state,
+      services: dto.services,
+      scheduleConfig: dto.scheduleConfig as Prisma.InputJsonObject | undefined,
+      isAvailable: dto.isAvailable,
+      offersLocationSharing: dto.offersLocationSharing,
+      pricingConfig: dto.pricingConfig as Prisma.InputJsonObject | undefined,
+      capacityPerDay: dto.capacityPerDay,
+      acceptedSpecies: dto.acceptedSpecies,
+      hasAirConditioning: dto.hasAirConditioning,
+      homeType: dto.homeType,
+      hasBackyard: dto.hasBackyard,
+      walkSchedule: dto.walkSchedule,
+    };
+
+    const create = {
+      userId,
+      bio: update.bio ?? '',
+      pricePerHour: update.pricePerHour ?? 50,
+      location: update.location ?? '',
+      city: update.city ?? '',
+      state: update.state ?? '',
+      services: update.services ?? [],
+      scheduleConfig: (update.scheduleConfig ?? {}) as Prisma.InputJsonObject,
+      isAvailable: update.isAvailable ?? true,
+      offersLocationSharing: update.offersLocationSharing ?? false,
+      pricingConfig: (update.pricingConfig ?? {}) as Prisma.InputJsonObject,
+      capacityPerDay: update.capacityPerDay ?? 1,
+      acceptedSpecies: update.acceptedSpecies ?? [],
+      hasAirConditioning: update.hasAirConditioning ?? false,
+      homeType: update.homeType,
+      hasBackyard: update.hasBackyard ?? false,
+      walkSchedule: update.walkSchedule,
     };
 
     return this.prisma.petsitterProfile.upsert({
       where: { userId },
-      update: data,
-      create: { userId, ...data },
+      update,
+      create,
     });
   }
 

@@ -13,7 +13,8 @@ export interface MatchParams {
   endTime?: string
   endDate?: string
   maxPrice?: number
-  petId?: string
+  petEnergyLevel?: 'baixo' | 'medio' | 'alto'
+  petSocialLevel?: 'exclusivo' | 'sociavel'
   needsAirConditioning?: boolean
   needsBackyard?: boolean
   preferredWalkSchedule?: 'manha' | 'noite'

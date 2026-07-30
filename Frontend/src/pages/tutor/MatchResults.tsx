@@ -125,17 +125,18 @@ export function MatchResults() {
   const endTime      = searchParams.get('endTime')      || undefined
   const endDate      = searchParams.get('endDate')      || undefined
   const maxPrice     = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined
-  const petId                 = searchParams.get('petId') ?? undefined
+  const petEnergyLevel = (searchParams.get('petEnergyLevel') as 'baixo' | 'medio' | 'alto' | null) ?? undefined
+  const petSocialLevel = (searchParams.get('petSocialLevel') as 'exclusivo' | 'sociavel' | null) ?? undefined
   const needsAirConditioning  = searchParams.get('needsAirConditioning') === 'true'
   const needsBackyard         = searchParams.get('needsBackyard') === 'true'
   const preferredWalkSchedule = searchParams.get('preferredWalkSchedule') as 'manha' | 'noite' | undefined
   const preferredHomeType     = searchParams.get('preferredHomeType') as 'casa' | 'apartamento' | undefined
 
   const { data: matches, isLoading } = useQuery({
-    queryKey: ['match', { service, species, city, neighborhood, date, startTime, endTime, endDate, maxPrice, petId, needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType }],
+    queryKey: ['match', { service, species, city, neighborhood, date, startTime, endTime, endDate, maxPrice, petEnergyLevel, petSocialLevel, needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType }],
     queryFn:  () => petsitterService.getMatches({
       service, species, city, neighborhood, date, startTime, endTime, endDate, maxPrice,
-      petId, needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType,
+      petEnergyLevel, petSocialLevel, needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType,
     }),
     enabled: !!service && !!species && !!city,
   })

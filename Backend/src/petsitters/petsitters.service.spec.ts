@@ -102,13 +102,12 @@ describe('PetsittersService.findMatches — clima/infraestrutura', () => {
 
   it('awards pet-compatibility points for a high-energy pet matched with a backyard petsitter', async () => {
     prisma.petsitterProfile.findMany.mockResolvedValue([basePetsitter({ hasBackyard: true })]);
-    prisma.pet.findUnique.mockResolvedValue({ id: 'pet-1', energyLevel: 'alto', socialLevel: null });
 
     const [result] = await service.findMatches({
       service: 'passeio' as any,
       species: 'cachorro' as any,
       city: 'Cuiabá',
-      petId: 'pet-1',
+      petEnergyLevel: 'alto',
     } as any);
 
     expect(result.matchReasons.some((r: string) => r.includes('energia'))).toBe(true);
@@ -116,13 +115,12 @@ describe('PetsittersService.findMatches — clima/infraestrutura', () => {
 
   it('awards pet-compatibility points for an exclusive pet matched with a single-capacity petsitter', async () => {
     prisma.petsitterProfile.findMany.mockResolvedValue([basePetsitter({ capacityPerDay: 1 })]);
-    prisma.pet.findUnique.mockResolvedValue({ id: 'pet-1', energyLevel: null, socialLevel: 'exclusivo' });
 
     const [result] = await service.findMatches({
       service: 'passeio' as any,
       species: 'cachorro' as any,
       city: 'Cuiabá',
-      petId: 'pet-1',
+      petSocialLevel: 'exclusivo',
     } as any);
 
     expect(result.matchReasons.some((r: string) => r.includes('único'))).toBe(true);

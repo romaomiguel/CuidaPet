@@ -6,6 +6,7 @@ import { serviceLabels } from '@/utils'
 import { AmbientBlobs } from '@/components/ui/AmbientBlobs'
 import { StepProgress } from '@/components/ui/StepProgress'
 import { petService } from '@/services/pet.service'
+import { useAuthStore } from '@/store/auth.store'
 import type { ServiceType } from '@/types'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -82,9 +83,12 @@ export function MatchWizard() {
   const [preferredWalkSchedule, setPreferredWalkSchedule] = useState<'' | 'manha' | 'noite'>('')
   const [preferredHomeType,    setPreferredHomeType]    = useState<'' | 'casa' | 'apartamento'>('')
 
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated)
+
   const { data: savedPets = [] } = useQuery({
     queryKey: ['pets'],
     queryFn:  petService.list,
+    enabled:  isAuthenticated,
   })
 
   const isDaily = DAILY_SERVICES.includes(service as ServiceType)
@@ -116,7 +120,9 @@ export function MatchWizard() {
       if (!isDaily && endTime)   params.append('endTime', endTime)
       if (isDaily && endDate)    params.append('endDate', endDate)
       if (maxPrice)     params.append('maxPrice', maxPrice)
-      if (selectedPetId)         params.append('petId', selectedPetId)
+      const selectedPet = savedPets.find(p => p.id === selectedPetId)
+      if (selectedPet?.energyLevel) params.append('petEnergyLevel', selectedPet.energyLevel)
+      if (selectedPet?.socialLevel) params.append('petSocialLevel', selectedPet.socialLevel)
       if (needsAirConditioning)  params.append('needsAirConditioning', 'true')
       if (needsBackyard)         params.append('needsBackyard', 'true')
       if (preferredWalkSchedule) params.append('preferredWalkSchedule', preferredWalkSchedule)

@@ -51,10 +51,15 @@ export class MatchPetsittersDto {
   @Min(0)
   maxPrice?: number;
 
-  @ApiPropertyOptional({ description: 'ID de um pet salvo do tutor — usado para cruzar energyLevel/socialLevel na pontuação' })
+  @ApiPropertyOptional({ enum: ['baixo', 'medio', 'alto'], description: 'Nível de energia do pet do tutor — usado na pontuação de compatibilidade' })
   @IsOptional()
-  @IsString()
-  petId?: string;
+  @IsIn(['baixo', 'medio', 'alto'])
+  petEnergyLevel?: string;
+
+  @ApiPropertyOptional({ enum: ['exclusivo', 'sociavel'], description: 'Nível de sociabilidade do pet do tutor — usado na pontuação de compatibilidade' })
+  @IsOptional()
+  @IsIn(['exclusivo', 'sociavel'])
+  petSocialLevel?: string;
 
   @ApiPropertyOptional({ description: 'Tutor precisa de ambiente com ar-condicionado' })
   @IsOptional()
