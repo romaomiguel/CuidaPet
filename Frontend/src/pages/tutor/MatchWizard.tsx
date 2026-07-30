@@ -278,24 +278,16 @@ export function MatchWizard() {
                       <button
                         type="button"
                         onClick={() => setNeedsAirConditioning(v => !v)}
-                        className={clsx(
-                          'flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left',
-                          needsAirConditioning ? 'bg-primary-50 border-primary-400' : 'bg-background border-transparent',
-                        )}
+                        className={needsAirConditioning ? 'toggle-chip-active' : 'toggle-chip'}
                       >
-                        <span className="text-sm font-semibold text-ink">Preciso de ambiente com ar-condicionado</span>
-                        {needsAirConditioning ? <CheckCircle2 size={20} className="text-primary-600" /> : null}
+                        Preciso de ambiente com ar-condicionado
                       </button>
                       <button
                         type="button"
                         onClick={() => setNeedsBackyard(v => !v)}
-                        className={clsx(
-                          'flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left',
-                          needsBackyard ? 'bg-primary-50 border-primary-400' : 'bg-background border-transparent',
-                        )}
+                        className={needsBackyard ? 'toggle-chip-active' : 'toggle-chip'}
                       >
-                        <span className="text-sm font-semibold text-ink">Prefiro cuidador com quintal</span>
-                        {needsBackyard ? <CheckCircle2 size={20} className="text-primary-600" /> : null}
+                        Prefiro cuidador com quintal
                       </button>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
