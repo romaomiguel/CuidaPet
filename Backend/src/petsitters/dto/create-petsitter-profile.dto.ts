@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsBoolean,
   IsObject,
+  IsIn,
   Min,
   MaxLength,
   IsUrl,
@@ -93,4 +94,24 @@ export class CreatePetsitterProfileDto {
   @IsEnum(PetSpecies, { each: true })
   @IsOptional()
   acceptedSpecies?: PetSpecies[];
+
+  @ApiPropertyOptional({ description: 'Indica se o ambiente do petsitter tem ar-condicionado' })
+  @IsOptional()
+  @IsBoolean()
+  hasAirConditioning?: boolean;
+
+  @ApiPropertyOptional({ enum: ['casa', 'apartamento'], description: 'Tipo de imóvel onde o petsitter atende' })
+  @IsOptional()
+  @IsIn(['casa', 'apartamento'])
+  homeType?: string;
+
+  @ApiPropertyOptional({ description: 'Indica se o petsitter tem quintal' })
+  @IsOptional()
+  @IsBoolean()
+  hasBackyard?: boolean;
+
+  @ApiPropertyOptional({ enum: ['manha', 'noite'], description: 'Horário preferido do petsitter para passeios' })
+  @IsOptional()
+  @IsIn(['manha', 'noite'])
+  walkSchedule?: string;
 }

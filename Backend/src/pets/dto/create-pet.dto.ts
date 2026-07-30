@@ -8,6 +8,7 @@ import {
   Max,
   MaxLength,
   IsUrl,
+  IsIn,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PetSpecies } from '@prisma/client';
@@ -45,6 +46,28 @@ export class CreatePetDto {
   @IsString()
   @MaxLength(500, { message: 'As observações não podem ter mais de 500 caracteres' })
   notes?: string;
+
+  @ApiPropertyOptional({ enum: ['baixo', 'medio', 'alto'], description: 'Nível de energia do pet' })
+  @IsOptional()
+  @IsIn(['baixo', 'medio', 'alto'])
+  energyLevel?: string;
+
+  @ApiPropertyOptional({ enum: ['exclusivo', 'sociavel'], description: 'Nível de sociabilidade do pet' })
+  @IsOptional()
+  @IsIn(['exclusivo', 'sociavel'])
+  socialLevel?: string;
+
+  @ApiPropertyOptional({ description: 'Restrições médicas ou alimentares do pet' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, { message: 'As restrições médicas não podem ter mais de 500 caracteres' })
+  medicalRestrictions?: string;
+
+  @ApiPropertyOptional({ description: 'Instruções de alimentação do pet' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500, { message: 'As instruções de alimentação não podem ter mais de 500 caracteres' })
+  feedingInstructions?: string;
 
   @ApiPropertyOptional({ description: 'URL da foto' })
   @IsOptional()
