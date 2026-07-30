@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { MapPin, LocateFixed, ArrowRight, ArrowLeft, Clock, CalendarDays, CheckCircle2, Wallet, Info, CheckCircle } from 'lucide-react'
 import { serviceLabels } from '@/utils'
 import { AmbientBlobs } from '@/components/ui/AmbientBlobs'
 import { StepProgress } from '@/components/ui/StepProgress'
+import { petService } from '@/services/pet.service'
 import type { ServiceType } from '@/types'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -74,8 +76,24 @@ export function MatchWizard() {
   const [neighborhood,  setNeighborhood]  = useState<string>('')
   const [maxPrice,      setMaxPrice]      = useState<string>('80')
 
+  const [selectedPetId,        setSelectedPetId]        = useState<string>('')
+  const [needsAirConditioning, setNeedsAirConditioning] = useState(false)
+  const [needsBackyard,        setNeedsBackyard]        = useState(false)
+  const [preferredWalkSchedule, setPreferredWalkSchedule] = useState<'' | 'manha' | 'noite'>('')
+  const [preferredHomeType,    setPreferredHomeType]    = useState<'' | 'casa' | 'apartamento'>('')
+
+  const { data: savedPets = [] } = useQuery({
+    queryKey: ['pets'],
+    queryFn:  petService.list,
+  })
+
   const isDaily = DAILY_SERVICES.includes(service as ServiceType)
   const tier = budgetTier(Number(maxPrice) || 80)
+
+  const selectPet = (pet: (typeof savedPets)[number]) => {
+    setSelectedPetId(pet.id)
+    setSpecies(pet.species)
+  }
 
   // ── Validação por passo ───────────────────────────────────────────────────────
 
@@ -98,6 +116,11 @@ export function MatchWizard() {
       if (!isDaily && endTime)   params.append('endTime', endTime)
       if (isDaily && endDate)    params.append('endDate', endDate)
       if (maxPrice)     params.append('maxPrice', maxPrice)
+      if (selectedPetId)         params.append('petId', selectedPetId)
+      if (needsAirConditioning)  params.append('needsAirConditioning', 'true')
+      if (needsBackyard)         params.append('needsBackyard', 'true')
+      if (preferredWalkSchedule) params.append('preferredWalkSchedule', preferredWalkSchedule)
+      if (preferredHomeType)     params.append('preferredHomeType', preferredHomeType)
       navigate(`/match/resultados?${params.toString()}`)
     }
   }
@@ -248,6 +271,52 @@ export function MatchWizard() {
                       </div>
                     </>
                   )}
+
+                  <div className="pt-2 border-t border-stroke">
+                    <label className="label mb-3">Preferências de ambiente (opcional)</label>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setNeedsAirConditioning(v => !v)}
+                        className={clsx(
+                          'flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left',
+                          needsAirConditioning ? 'bg-primary-50 border-primary-400' : 'bg-background border-transparent',
+                        )}
+                      >
+                        <span className="text-sm font-semibold text-ink">Preciso de ambiente com ar-condicionado</span>
+                        {needsAirConditioning ? <CheckCircle2 size={20} className="text-primary-600" /> : null}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNeedsBackyard(v => !v)}
+                        className={clsx(
+                          'flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left',
+                          needsBackyard ? 'bg-primary-50 border-primary-400' : 'bg-background border-transparent',
+                        )}
+                      >
+                        <span className="text-sm font-semibold text-ink">Prefiro cuidador com quintal</span>
+                        {needsBackyard ? <CheckCircle2 size={20} className="text-primary-600" /> : null}
+                      </button>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="label" htmlFor="match-walk-schedule">Horário de passeio</label>
+                          <select id="match-walk-schedule" value={preferredWalkSchedule} onChange={e => setPreferredWalkSchedule(e.target.value as typeof preferredWalkSchedule)} className="select-field w-full">
+                            <option value="">Sem preferência</option>
+                            <option value="manha">Manhã</option>
+                            <option value="noite">Noite</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="label" htmlFor="match-home-type">Tipo de imóvel</label>
+                          <select id="match-home-type" value={preferredHomeType} onChange={e => setPreferredHomeType(e.target.value as typeof preferredHomeType)} className="select-field w-full">
+                            <option value="">Sem preferência</option>
+                            <option value="casa">Casa</option>
+                            <option value="apartamento">Apartamento</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -259,6 +328,27 @@ export function MatchWizard() {
                   <h1 className="font-heading text-3xl font-bold text-ink mb-1">Quem vai receber cuidado?</h1>
                   <p className="text-muted">Conte um pouco mais sobre o seu companheiro.</p>
                 </div>
+
+                {savedPets.length > 0 && (
+                  <div className="max-w-md mx-auto w-full">
+                    <label className="label mb-3">Selecione um pet salvo (opcional)</label>
+                    <div className="flex flex-wrap gap-2.5">
+                      {savedPets.map(pet => (
+                        <button
+                          key={pet.id}
+                          type="button"
+                          onClick={() => selectPet(pet)}
+                          className={selectedPetId === pet.id ? 'toggle-chip-active' : 'toggle-chip'}
+                        >
+                          {pet.name}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted mt-1.5 px-1">
+                      Usamos as informações já salvas do pet (energia, sociabilidade) pra melhorar o match.
+                    </p>
+                  </div>
+                )}
 
                 <div className="max-w-md mx-auto w-full flex flex-col gap-6">
                   <div>
