@@ -10,6 +10,7 @@ enum Role {
   tutor
   petsitter
   admin
+  partner
 }
 
 enum ServiceType {
@@ -54,6 +55,7 @@ model User {
   // Relacionamentos
   pets             Pet[]
   petsitterProfile PetsitterProfile?
+  partnerProfile   PartnerProfile?
 
   bookingsAsTutor     Booking[] @relation("TutorBookings")
   bookingsAsPetsitter Booking[] @relation("PetsitterBookings")
@@ -91,6 +93,25 @@ model PetsitterProfile {
   homeType              String? // "casa" | "apartamento"
   hasBackyard           Boolean @default(false)
   walkSchedule          String? // "manha" | "noite" — horário preferido de passeio
+}
+
+enum PartnerType {
+  clinica
+  petshop
+}
+
+model PartnerProfile {
+  id              String        @id @default(uuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            PartnerType
+  businessName    String
+  cnpj            String?       @unique
+  address         String
+  city            String
+  state           String
+  servicesOffered ServiceType[]
+  createdAt       DateTime      @default(now())
 }
 
 model Pet {
