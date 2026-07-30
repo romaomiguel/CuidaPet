@@ -48,6 +48,10 @@ const schema = z.object({
   acceptedSpecies: z.array(z.string()).min(1, 'Selecione ao menos 1 espécie'),
   isAvailable:  z.boolean(),
   offersLocationSharing: z.boolean(),
+  hasAirConditioning: z.boolean(),
+  homeType: z.enum(['casa', 'apartamento']).optional(),
+  hasBackyard: z.boolean(),
+  walkSchedule: z.enum(['manha', 'noite']).optional(),
   pricingConfig: z.record(z.object({
     type: z.enum(['fixed', 'per_hour']),
     price: z.coerce.number().min(1, 'Valor inválido')
@@ -94,6 +98,10 @@ export function PetsitterProfilePage() {
       acceptedSpecies: [] as string[],
       isAvailable: true,
       offersLocationSharing: false,
+      hasAirConditioning: false,
+      homeType: undefined,
+      hasBackyard: false,
+      walkSchedule: undefined,
       pricingConfig: {},
       capacityPerDay: 1,
     },
@@ -114,6 +122,10 @@ export function PetsitterProfilePage() {
         acceptedSpecies: (ps as any).acceptedSpecies ?? [],
         isAvailable:  ps.isAvailable,
         offersLocationSharing: ps.offersLocationSharing ?? false,
+        hasAirConditioning: ps.hasAirConditioning ?? false,
+        homeType: ps.homeType ?? undefined,
+        hasBackyard: ps.hasBackyard ?? false,
+        walkSchedule: ps.walkSchedule ?? undefined,
         capacityPerDay: ps.capacityPerDay ?? 1,
       })
       if (ps.scheduleConfig) {
@@ -445,6 +457,67 @@ export function PetsitterProfilePage() {
                   </div>
                 )} />
                 {errors.services && <p className="text-xs text-error-500">⚠ {errors.services.message}</p>}
+              </div>
+
+              <div className="card space-y-4">
+                <h2 className="font-heading text-xl font-bold text-primary-700 flex items-center gap-2"><Home size={18} /> Ambiente</h2>
+                <p className="text-sm text-muted -mt-1">Essas informações ajudam o Match Inteligente a encontrar tutores compatíveis com o seu ambiente.</p>
+
+                <div>
+                  <label className="label mb-2">Tipo de imóvel</label>
+                  <Controller control={control} name="homeType" render={({ field }) => (
+                    <div className="flex gap-2.5">
+                      {[{ value: 'casa', label: 'Casa' }, { value: 'apartamento', label: 'Apartamento' }].map(opt => (
+                        <button key={opt.value} type="button"
+                          onClick={() => field.onChange(opt.value)}
+                          className={field.value === opt.value ? 'toggle-chip-active' : 'toggle-chip'}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )} />
+                </div>
+
+                <div>
+                  <label className="label mb-2">Horário preferido de passeio</label>
+                  <Controller control={control} name="walkSchedule" render={({ field }) => (
+                    <div className="flex gap-2.5">
+                      {[{ value: 'manha', label: 'Manhã' }, { value: 'noite', label: 'Noite' }].map(opt => (
+                        <button key={opt.value} type="button"
+                          onClick={() => field.onChange(opt.value)}
+                          className={field.value === opt.value ? 'toggle-chip-active' : 'toggle-chip'}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )} />
+                </div>
+
+                <div className="h-px bg-stroke" />
+
+                <Controller control={control} name="hasAirConditioning" render={({ field }) => (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">Ambiente com ar-condicionado</p>
+                      <p className="text-xs text-muted">Importante pro calor de Cuiabá</p>
+                    </div>
+                    <button type="button" onClick={() => field.onChange(!field.value)} className={clsx('transition-colors flex-shrink-0', field.value ? 'text-primary-500' : 'text-stroke')}>
+                      {field.value ? <ToggleRight size={30} /> : <ToggleLeft size={30} />}
+                    </button>
+                  </div>
+                )} />
+
+                <Controller control={control} name="hasBackyard" render={({ field }) => (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-ink">Tenho quintal</p>
+                      <p className="text-xs text-muted">Espaço extra para os pets se exercitarem</p>
+                    </div>
+                    <button type="button" onClick={() => field.onChange(!field.value)} className={clsx('transition-colors flex-shrink-0', field.value ? 'text-primary-500' : 'text-stroke')}>
+                      {field.value ? <ToggleRight size={30} /> : <ToggleLeft size={30} />}
+                    </button>
+                  </div>
+                )} />
               </div>
             </div>
 
