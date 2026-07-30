@@ -18,10 +18,23 @@ const schema = z.object({
   age:     z.coerce.number().min(0, 'Idade inválida'),
   weight:  z.coerce.number().optional(),
   notes:   z.string().optional(),
+  energyLevel:         z.string().optional(),
+  socialLevel:         z.string().optional(),
+  medicalRestrictions: z.string().optional(),
+  feedingInstructions: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
 const SPECIES_OPTIONS = Object.entries(speciesLabels) as [PetSpecies, string][]
+const ENERGY_OPTIONS: [string, string][] = [
+  ['baixo', 'Baixa energia'],
+  ['medio', 'Energia média'],
+  ['alto', 'Alta energia'],
+]
+const SOCIAL_OPTIONS: [string, string][] = [
+  ['sociavel', 'Sociável com outros pets'],
+  ['exclusivo', 'Precisa ser o único pet'],
+]
 
 export function PetsPage() {
   const queryClient = useQueryClient()
@@ -40,7 +53,9 @@ export function PetsPage() {
   const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
-  const species = watch('species')
+  const species     = watch('species')
+  const energyLevel = watch('energyLevel')
+  const socialLevel = watch('socialLevel')
 
   const resetForm = () => {
     reset({})
@@ -88,6 +103,10 @@ export function PetsPage() {
       age:     pet.age,
       weight:  pet.weight,
       notes:   pet.notes,
+      energyLevel:         pet.energyLevel,
+      socialLevel:         pet.socialLevel,
+      medicalRestrictions: pet.medicalRestrictions,
+      feedingInstructions: pet.feedingInstructions,
     })
     setPhotoPreview(pet.photo ?? null)
     formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -105,8 +124,10 @@ export function PetsPage() {
   const onSubmit = (data: FormData) => {
     const payload: PetPayload = {
       ...data,
-      species: data.species as PetSpecies,
-      photo:   photoPreview ?? undefined,
+      species:     data.species as PetSpecies,
+      energyLevel: data.energyLevel as PetPayload['energyLevel'],
+      socialLevel: data.socialLevel as PetPayload['socialLevel'],
+      photo:       photoPreview ?? undefined,
     }
     editing
       ? updateMutation.mutate({ id: editing, data: payload })
@@ -197,6 +218,54 @@ export function PetsPage() {
             <div>
               <label className="label" htmlFor="pet-notes">Informações Adicionais</label>
               <textarea id="pet-notes" {...register('notes')} rows={4} className="w-full p-4 rounded-2xl bg-background border-2 border-transparent focus:border-primary-400 focus:bg-white outline-none text-sm text-ink resize-none transition-all" placeholder="Alergias, temperamento, medicamentos, necessidades especiais..." />
+            </div>
+
+            <div>
+              <label className="label mb-2">Nível de energia</label>
+              <div className="flex gap-2 flex-wrap">
+                {ENERGY_OPTIONS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setValue('energyLevel', value, { shouldValidate: true })}
+                    className={clsx(
+                      'px-4 py-2 rounded-pill text-sm font-semibold transition-colors',
+                      energyLevel === value ? 'bg-secondary-500 text-primary-800' : 'bg-background text-muted hover:bg-stroke',
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="label mb-2">Sociabilidade</label>
+              <div className="flex gap-2 flex-wrap">
+                {SOCIAL_OPTIONS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setValue('socialLevel', value, { shouldValidate: true })}
+                    className={clsx(
+                      'px-4 py-2 rounded-pill text-sm font-semibold transition-colors',
+                      socialLevel === value ? 'bg-secondary-500 text-primary-800' : 'bg-background text-muted hover:bg-stroke',
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="pet-medical">Restrições médicas ou alimentares</label>
+              <textarea id="pet-medical" {...register('medicalRestrictions')} rows={2} className="w-full p-4 rounded-2xl bg-background border-2 border-transparent focus:border-primary-400 focus:bg-white outline-none text-sm text-ink resize-none transition-all" placeholder="Alergias, medicamentos, condições pré-existentes..." />
+            </div>
+
+            <div>
+              <label className="label" htmlFor="pet-feeding">Instruções de alimentação</label>
+              <textarea id="pet-feeding" {...register('feedingInstructions')} rows={2} className="w-full p-4 rounded-2xl bg-background border-2 border-transparent focus:border-primary-400 focus:bg-white outline-none text-sm text-ink resize-none transition-all" placeholder="Horários, quantidade, ração específica..." />
             </div>
 
             <div className="flex gap-3 self-end">
