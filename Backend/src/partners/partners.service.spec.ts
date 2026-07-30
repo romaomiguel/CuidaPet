@@ -87,6 +87,15 @@ describe('PartnersService', () => {
       await expect(service.create(dto)).rejects.toThrow(ConflictException);
       expect(prisma.user.create).not.toHaveBeenCalled();
     });
+
+    it('throws ConflictException when the CNPJ is already in use', async () => {
+      const dtoWithCnpj = { ...dto, cnpj: '12.345.678/0001-99' };
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.partnerProfile.findUnique.mockResolvedValue({ id: 'existing-profile', cnpj: dtoWithCnpj.cnpj });
+
+      await expect(service.create(dtoWithCnpj)).rejects.toThrow(ConflictException);
+      expect(prisma.user.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('findAllForAdmin', () => {

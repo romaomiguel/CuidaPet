@@ -15,6 +15,13 @@ export class PartnersService {
       throw new ConflictException('E-mail já está em uso.');
     }
 
+    if (dto.cnpj) {
+      const existingCnpj = await this.prisma.partnerProfile.findUnique({ where: { cnpj: dto.cnpj } });
+      if (existingCnpj) {
+        throw new ConflictException('CNPJ já está em uso.');
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     return this.prisma.user.create({
