@@ -305,6 +305,10 @@ export class PetsittersService {
       capacityPerDay: true,
       status: true,
       acceptedSpecies: true,
+      hasAirConditioning: true,
+      homeType: true,
+      hasBackyard: true,
+      walkSchedule: true,
       user: { select: { name: true, avatar: true } },
     } as const;
   }
@@ -332,6 +336,10 @@ export class PetsittersService {
       capacityPerDay: true,
       status: true,
       acceptedSpecies: true,
+      hasAirConditioning: true,
+      homeType: true,
+      hasBackyard: true,
+      walkSchedule: true,
       identityProof: true,
       addressProof: true,
       user: { select: { name: true, email: true, phone: true, avatar: true } },
@@ -485,6 +493,10 @@ export class PetsittersService {
           : undefined,
         capacityPerDay: updatePetsitterProfileDto.capacityPerDay,
         acceptedSpecies: updatePetsitterProfileDto.acceptedSpecies,
+        hasAirConditioning: updatePetsitterProfileDto.hasAirConditioning,
+        homeType: updatePetsitterProfileDto.homeType,
+        hasBackyard: updatePetsitterProfileDto.hasBackyard,
+        walkSchedule: updatePetsitterProfileDto.walkSchedule,
       },
     });
   }
@@ -493,37 +505,29 @@ export class PetsittersService {
     userId: string,
     updatePetsitterProfileDto: UpdatePetsitterProfileDto,
   ) {
+    const data = {
+      bio: updatePetsitterProfileDto.bio ?? '',
+      pricePerHour: updatePetsitterProfileDto.pricePerHour ?? 50,
+      location: updatePetsitterProfileDto.location ?? '',
+      city: updatePetsitterProfileDto.city ?? '',
+      state: updatePetsitterProfileDto.state ?? '',
+      services: updatePetsitterProfileDto.services ?? [],
+      scheduleConfig: (updatePetsitterProfileDto.scheduleConfig ?? {}) as Prisma.InputJsonObject,
+      isAvailable: updatePetsitterProfileDto.isAvailable ?? true,
+      offersLocationSharing: updatePetsitterProfileDto.offersLocationSharing ?? false,
+      pricingConfig: (updatePetsitterProfileDto.pricingConfig ?? {}) as Prisma.InputJsonObject,
+      capacityPerDay: updatePetsitterProfileDto.capacityPerDay ?? 1,
+      acceptedSpecies: updatePetsitterProfileDto.acceptedSpecies ?? [],
+      hasAirConditioning: updatePetsitterProfileDto.hasAirConditioning ?? false,
+      homeType: updatePetsitterProfileDto.homeType,
+      hasBackyard: updatePetsitterProfileDto.hasBackyard ?? false,
+      walkSchedule: updatePetsitterProfileDto.walkSchedule,
+    };
+
     return this.prisma.petsitterProfile.upsert({
       where: { userId },
-      update: {
-        bio: updatePetsitterProfileDto.bio ?? '',
-        pricePerHour: updatePetsitterProfileDto.pricePerHour ?? 50,
-        location: updatePetsitterProfileDto.location ?? '',
-        city: updatePetsitterProfileDto.city ?? '',
-        state: updatePetsitterProfileDto.state ?? '',
-        services: updatePetsitterProfileDto.services ?? [],
-        scheduleConfig: (updatePetsitterProfileDto.scheduleConfig ?? {}) as Prisma.InputJsonObject,
-        isAvailable: updatePetsitterProfileDto.isAvailable ?? true,
-        offersLocationSharing: updatePetsitterProfileDto.offersLocationSharing ?? false,
-        pricingConfig: (updatePetsitterProfileDto.pricingConfig ?? {}) as Prisma.InputJsonObject,
-        capacityPerDay: updatePetsitterProfileDto.capacityPerDay ?? 1,
-        acceptedSpecies: updatePetsitterProfileDto.acceptedSpecies ?? [],
-      },
-      create: {
-        userId,
-        bio: updatePetsitterProfileDto.bio ?? '',
-        pricePerHour: updatePetsitterProfileDto.pricePerHour ?? 50,
-        location: updatePetsitterProfileDto.location ?? '',
-        city: updatePetsitterProfileDto.city ?? '',
-        state: updatePetsitterProfileDto.state ?? '',
-        services: updatePetsitterProfileDto.services ?? [],
-        scheduleConfig: (updatePetsitterProfileDto.scheduleConfig ?? {}) as Prisma.InputJsonObject,
-        isAvailable: updatePetsitterProfileDto.isAvailable ?? true,
-        offersLocationSharing: updatePetsitterProfileDto.offersLocationSharing ?? false,
-        pricingConfig: (updatePetsitterProfileDto.pricingConfig ?? {}) as Prisma.InputJsonObject,
-        capacityPerDay: updatePetsitterProfileDto.capacityPerDay ?? 1,
-        acceptedSpecies: updatePetsitterProfileDto.acceptedSpecies ?? [],
-      },
+      update: data,
+      create: { userId, ...data },
     });
   }
 
