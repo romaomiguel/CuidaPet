@@ -13,6 +13,11 @@ export interface MatchParams {
   endTime?: string
   endDate?: string
   maxPrice?: number
+  petId?: string
+  needsAirConditioning?: boolean
+  needsBackyard?: boolean
+  preferredWalkSchedule?: 'manha' | 'noite'
+  preferredHomeType?: 'casa' | 'apartamento'
 }
 
 export type MatchResult = PetsitterProfile & {

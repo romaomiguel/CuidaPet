@@ -75,6 +75,10 @@ export interface PetsitterProfile {
   addressProof?: string
   acceptedSpecies?: PetSpecies[]
   offersLocationSharing: boolean
+  hasAirConditioning: boolean
+  homeType: 'casa' | 'apartamento' | null
+  hasBackyard: boolean
+  walkSchedule: 'manha' | 'noite' | null
 }
 
 /**
@@ -109,6 +113,10 @@ export interface Pet {
   age: number
   weight?: number
   notes?: string
+  energyLevel?: 'baixo' | 'medio' | 'alto'
+  socialLevel?: 'exclusivo' | 'sociavel'
+  medicalRestrictions?: string
+  feedingInstructions?: string
   photo?: string
   createdAt: string
 }
@@ -120,6 +128,10 @@ export interface PetPayload {
   age: number
   weight?: number
   notes?: string
+  energyLevel?: 'baixo' | 'medio' | 'alto'
+  socialLevel?: 'exclusivo' | 'sociavel'
+  medicalRestrictions?: string
+  feedingInstructions?: string
   photo?: string
 }
 
