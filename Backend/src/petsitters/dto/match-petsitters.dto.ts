@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, IsIn, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ServiceType, PetSpecies } from '@prisma/client';
@@ -50,4 +50,27 @@ export class MatchPetsittersDto {
   @IsNumber()
   @Min(0)
   maxPrice?: number;
+
+  @ApiPropertyOptional({ description: 'ID de um pet salvo do tutor — usado para cruzar energyLevel/socialLevel na pontuação' })
+  @IsOptional()
+  @IsString()
+  petId?: string;
+
+  @ApiPropertyOptional({ description: 'Tutor precisa de ambiente com ar-condicionado' })
+  @IsOptional()
+  needsAirConditioning?: boolean;
+
+  @ApiPropertyOptional({ description: 'Tutor precisa de ambiente com quintal' })
+  @IsOptional()
+  needsBackyard?: boolean;
+
+  @ApiPropertyOptional({ enum: ['manha', 'noite'], description: 'Horário de passeio preferido pelo tutor' })
+  @IsOptional()
+  @IsIn(['manha', 'noite'])
+  preferredWalkSchedule?: string;
+
+  @ApiPropertyOptional({ enum: ['casa', 'apartamento'], description: 'Tipo de imóvel preferido pelo tutor' })
+  @IsOptional()
+  @IsIn(['casa', 'apartamento'])
+  preferredHomeType?: string;
 }

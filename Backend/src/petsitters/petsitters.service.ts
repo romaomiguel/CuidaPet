@@ -118,7 +118,18 @@ export class PetsittersService {
   }
 
   async findMatches(params: MatchPetsittersDto) {
-    const { service, species, city, neighborhood, date, startTime, endTime, maxPrice } = params;
+    const {
+      service, species, city, neighborhood, date, startTime, endTime, maxPrice,
+      petId, needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType,
+    } = params;
+
+    let pet: { energyLevel: string | null; socialLevel: string | null } | null = null;
+    if (petId) {
+      pet = await this.prisma.pet.findUnique({
+        where: { id: petId },
+        select: { energyLevel: true, socialLevel: true },
+      });
+    }
 
     // Serviços que cobram por diária (hospedagem e creche)
     const DAILY_SERVICES = ['hospedagem', 'creche'];
@@ -249,6 +260,36 @@ export class PetsittersService {
       } else {
         // Sem limite de orçamento: bônus neutro maior
         score += 10;
+      }
+
+      // ── Clima e Infraestrutura (até 20pts) ────────────────────────
+      if (needsAirConditioning && profile.hasAirConditioning) {
+        score += 5;
+        matchReasons.push('❄️ Ambiente com ar-condicionado');
+      }
+      if (needsBackyard && profile.hasBackyard) {
+        score += 5;
+        matchReasons.push('🌳 Ambiente com quintal');
+      }
+      if (preferredWalkSchedule && profile.walkSchedule === preferredWalkSchedule) {
+        score += 5;
+        matchReasons.push(
+          `🕐 Passeios no horário ${preferredWalkSchedule === 'manha' ? 'da manhã' : 'da noite'}`,
+        );
+      }
+      if (preferredHomeType && profile.homeType === preferredHomeType) {
+        score += 5;
+        matchReasons.push(`🏡 Atende em ${preferredHomeType}`);
+      }
+
+      // ── Compatibilidade do Pet (até 10pts) ─────────────────────────
+      if (pet?.energyLevel === 'alto' && profile.hasBackyard) {
+        score += 5;
+        matchReasons.push('⚡ Espaço para gastar energia (pet de alta energia)');
+      }
+      if (pet?.socialLevel === 'exclusivo' && profile.capacityPerDay === 1) {
+        score += 5;
+        matchReasons.push('🐾 Cuidador atende um único pet por vez');
       }
 
       return {
