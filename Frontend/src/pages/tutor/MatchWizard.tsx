@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { MapPin, LocateFixed, ArrowRight, ArrowLeft, Clock, CalendarDays, CheckCircle2, Wallet, Info, CheckCircle } from 'lucide-react'
-import { serviceLabels } from '@/utils'
+import { serviceLabels, PROVIDER_TYPE_OPTIONS, PARTNER_SERVICE_CARDS, type ProviderType } from '@/utils'
 import { AmbientBlobs } from '@/components/ui/AmbientBlobs'
 import { StepProgress } from '@/components/ui/StepProgress'
 import { petService } from '@/services/pet.service'
@@ -13,7 +13,11 @@ import toast from 'react-hot-toast'
 
 // ── Constantes ─────────────────────────────────────────────────────────────────
 
-const SERVICES: { type: ServiceType; emoji: string; desc: string; ring: string; bg: string }[] = [
+/** Shape comum dos cards de serviço do Step 1 — o fluxo Petsitter preenche desc/ring/bg,
+ * o fluxo Parceiro (Clínica/Petshop) usa só type/emoji e cai nos estilos padrão abaixo. */
+type ServiceCard = { type: ServiceType; emoji: string; desc?: string; ring?: string; bg?: string }
+
+const SERVICES: ServiceCard[] = [
   { type: 'hospedagem',   emoji: '🏠', desc: 'Cuidados dia e noite',   ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
   { type: 'passeio',      emoji: '🦮', desc: 'Exercício diário',       ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
   { type: 'creche',       emoji: '🎾', desc: 'Diversão de dia',        ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
@@ -34,7 +38,6 @@ const SPECIES_OPTIONS = [
 // Serviços que cobram por diária
 const DAILY_SERVICES: ServiceType[] = ['hospedagem', 'creche']
 
-// Gera opções de horário de 30 em 30 min
 function buildTimeOptions() {
   const opts: string[] = []
   for (let h = 0; h < 24; h++) {
@@ -56,14 +59,35 @@ function budgetTier(value: number) {
   return BUDGET_TIERS.find(t => value <= t.max) ?? BUDGET_TIERS[BUDGET_TIERS.length - 1]
 }
 
-const TOTAL_STEPS = 4
-const STEP_LABELS = ['Serviço', 'Localização e Data', 'Detalhes do Pet', 'Orçamento']
+// Rótulos e total de passos dependem do tipo de prestador escolhido
+const PETSITTER_STEP_LABELS = ['Serviço', 'Localização e Data', 'Detalhes do Pet', 'Orçamento']
+const PARTNER_STEP_LABELS   = ['Serviço', 'Localização e Data', 'Detalhes do Pet']
+
+// Estilo padrão aplicado aos cards de serviço do fluxo Parceiro (que só definem type/emoji)
+const PARTNER_CARD_RING = 'peer-checked:border-primary-500'
+const PARTNER_CARD_BG   = 'bg-primary-100 text-primary-700'
+
+// Enriquecimento visual (desc + cores) dos cards B2B — só apresentação, a fonte de
+// verdade (type/emoji) continua em PARTNER_SERVICE_CARDS (@/utils). Dá aos cards de
+// Clínica/Petshop a mesma riqueza visual (descrição + variação de cor) dos cards do Petsitter.
+const PARTNER_CARD_META: Partial<Record<ServiceType, { desc: string; ring: string; bg: string }>> = {
+  consulta_veterinaria: { desc: 'Diagnóstico e acompanhamento',  ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
+  vacinacao:            { desc: 'Imunização em dia',             ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
+  exames:                { desc: 'Laboratoriais e de imagem',    ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
+  cirurgia:              { desc: 'Procedimentos cirúrgicos',     ring: 'peer-checked:border-error-500',     bg: 'bg-error-50 text-error-600'         },
+  internacao:            { desc: 'Cuidado contínuo e monitorado', ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
+  banho_e_tosa:          { desc: 'Limpeza e estética completa',  ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
+  venda_produtos:        { desc: 'Ração, acessórios e mais',     ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
+  farmacia_veterinaria:  { desc: 'Medicamentos e prescrições',   ring: 'peer-checked:border-error-500',     bg: 'bg-error-50 text-error-600'         },
+}
 
 // ── Componente ──────────────────────────────────────────────────────────────────
 
 export function MatchWizard() {
   const navigate = useNavigate()
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState(0) // 0 = seleção de tipo de prestador
+
+  const [providerType, setProviderType] = useState<ProviderType | ''>('')
 
   // Estado do wizard
   const [service,       setService]       = useState<ServiceType | ''>('')
@@ -91,8 +115,17 @@ export function MatchWizard() {
     enabled:  isAuthenticated,
   })
 
+  const isPartnerFlow = providerType === 'clinica' || providerType === 'petshop'
   const isDaily = DAILY_SERVICES.includes(service as ServiceType)
   const tier = budgetTier(Number(maxPrice) || 80)
+
+  const TOTAL_STEPS = isPartnerFlow ? 3 : 4
+  const STEP_LABELS = isPartnerFlow ? PARTNER_STEP_LABELS : PETSITTER_STEP_LABELS
+
+  const partnerServiceCards: ServiceCard[] = isPartnerFlow
+    ? PARTNER_SERVICE_CARDS[providerType as 'clinica' | 'petshop'].map(card => ({ ...card, ...PARTNER_CARD_META[card.type] }))
+    : []
+  const serviceCards: ServiceCard[] = isPartnerFlow ? partnerServiceCards : SERVICES
 
   const selectPet = (pet: (typeof savedPets)[number]) => {
     setSelectedPetId(pet.id)
@@ -102,19 +135,27 @@ export function MatchWizard() {
   // ── Validação por passo ───────────────────────────────────────────────────────
 
   const handleNext = () => {
+    if (step === 0 && !providerType) return toast.error('Escolha um tipo de prestador!')
     if (step === 1 && !service)  return toast.error('Selecione um serviço!')
     if (step === 2 && !city)     return toast.error('Informe sua cidade!')
-    if (step === 2 && !date)     return toast.error('Informe a data do serviço!')
+    if (step === 2 && !isPartnerFlow && !date) return toast.error('Informe a data do serviço!')
     if (step === 3 && !species)  return toast.error('Selecione a espécie do seu pet!')
 
     if (step < TOTAL_STEPS) {
       setStep(s => s + 1)
     } else {
       const params = new URLSearchParams()
+      params.append('providerType', providerType)
       params.append('service', service)
       params.append('species', species)
       params.append('city', city)
       if (neighborhood) params.append('neighborhood', neighborhood)
+
+      if (isPartnerFlow) {
+        navigate(`/match/resultados?${params.toString()}`)
+        return
+      }
+
       if (date)         params.append('date', date)
       if (!isDaily && startTime) params.append('startTime', startTime)
       if (!isDaily && endTime)   params.append('endTime', endTime)
@@ -143,19 +184,52 @@ export function MatchWizard() {
         {/* Card principal */}
         <div className="bg-white rounded-[2rem] shadow-xl p-6 sm:p-10 flex flex-col gap-8">
 
-          <StepProgress step={step} totalSteps={TOTAL_STEPS} label={STEP_LABELS[step - 1]} />
+          {step > 0 && <StepProgress step={step} totalSteps={TOTAL_STEPS} label={STEP_LABELS[step - 1]} />}
 
           <div className="min-h-[360px] flex flex-col">
+
+            {/* ── Passo 0 — Tipo de prestador ────────────────────── */}
+            {step === 0 && (
+              <div className="flex-1 flex flex-col gap-6">
+                <div className="text-center">
+                  <h1 className="font-heading text-3xl font-bold text-ink mb-1">Quem você está procurando?</h1>
+                  <p className="text-muted">Escolha o tipo de prestador ideal para o seu pet.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {PROVIDER_TYPE_OPTIONS.map(({ type, label, emoji, desc }) => (
+                    <label key={type} className="relative cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="providerType"
+                        checked={providerType === type}
+                        onChange={() => { setProviderType(type); setService('') }}
+                        className="peer sr-only"
+                      />
+                      <div className="h-full flex flex-col items-center justify-center text-center p-5 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:border-primary-500 peer-checked:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-300 peer-focus-visible:ring-offset-2">
+                        <span className="text-3xl mb-2">{emoji}</span>
+                        <span className="font-semibold text-sm text-ink">{label}</span>
+                        <span className="text-xs text-muted mt-0.5">{desc}</span>
+                      </div>
+                      {providerType === type && (
+                        <CheckCircle2 size={20} className="absolute top-2 right-2 text-primary-600" fill="white" />
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ── Passo 1 — Serviço ─────────────────────────────── */}
             {step === 1 && (
               <div className="flex-1 flex flex-col gap-6">
                 <div className="text-center">
-                  <h1 className="font-heading text-3xl font-bold text-ink mb-1">O que seu pet precisa hoje?</h1>
-                  <p className="text-muted">Selecione o serviço principal para encontrarmos o cuidador ideal.</p>
+                  <h1 className="font-heading text-3xl font-bold text-ink mb-1">
+                    {isPartnerFlow ? 'O que você precisa?' : 'O que seu pet precisa hoje?'}
+                  </h1>
+                  <p className="text-muted">Selecione o serviço principal para encontrarmos a opção ideal.</p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {SERVICES.map(({ type, emoji, desc, ring, bg }) => (
+                  {serviceCards.map(({ type, emoji, desc, ring, bg }) => (
                     <label key={type} className="relative cursor-pointer group">
                       <input
                         type="radio"
@@ -165,14 +239,14 @@ export function MatchWizard() {
                         className="peer sr-only"
                       />
                       <div className={clsx(
-                        'h-full flex flex-col items-center justify-center p-4 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:bg-background',
-                        ring,
+                        'h-full flex flex-col items-center justify-center p-4 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-300 peer-focus-visible:ring-offset-2',
+                        ring ?? PARTNER_CARD_RING,
                       )}>
-                        <div className={clsx('w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2', bg)}>
+                        <div className={clsx('w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2', bg ?? PARTNER_CARD_BG)}>
                           {emoji}
                         </div>
                         <span className="font-semibold text-sm text-ink text-center">{serviceLabels[type]}</span>
-                        <span className="text-xs text-muted text-center mt-0.5">{desc}</span>
+                        {desc && <span className="text-xs text-muted text-center mt-0.5">{desc}</span>}
                       </div>
                       {service === type && (
                         <CheckCircle2 size={20} className="absolute top-2 right-2 text-primary-600" fill="white" />
@@ -187,8 +261,12 @@ export function MatchWizard() {
             {step === 2 && (
               <div className="flex-1 flex flex-col gap-6">
                 <div className="text-center">
-                  <h1 className="font-heading text-3xl font-bold text-ink mb-1">Onde e quando?</h1>
-                  <p className="text-muted">Conte pra gente onde seu pet precisa de cuidado e as datas certinhas.</p>
+                  <h1 className="font-heading text-3xl font-bold text-ink mb-1">Onde{isPartnerFlow ? '' : ' e quando'}?</h1>
+                  <p className="text-muted">
+                    {isPartnerFlow
+                      ? 'Conte pra gente em qual cidade você precisa do atendimento.'
+                      : 'Conte pra gente onde seu pet precisa de cuidado e as datas certinhas.'}
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-5 max-w-md mx-auto w-full">
@@ -229,7 +307,7 @@ export function MatchWizard() {
                     />
                   </div>
 
-                  {isDaily ? (
+                  {!isPartnerFlow && (isDaily ? (
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
                         <label className="label" htmlFor="match-date-entrada">
@@ -276,45 +354,47 @@ export function MatchWizard() {
                         </div>
                       </div>
                     </>
-                  )}
+                  ))}
 
-                  <div className="pt-2 border-t border-stroke">
-                    <label className="label mb-3">Preferências de ambiente (opcional)</label>
-                    <div className="flex flex-col gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setNeedsAirConditioning(v => !v)}
-                        className={needsAirConditioning ? 'toggle-chip-active' : 'toggle-chip'}
-                      >
-                        Preciso de ambiente com ar-condicionado
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setNeedsBackyard(v => !v)}
-                        className={needsBackyard ? 'toggle-chip-active' : 'toggle-chip'}
-                      >
-                        Prefiro cuidador com quintal
-                      </button>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="label" htmlFor="match-walk-schedule">Horário de passeio</label>
-                          <select id="match-walk-schedule" value={preferredWalkSchedule} onChange={e => setPreferredWalkSchedule(e.target.value as typeof preferredWalkSchedule)} className="select-field w-full">
-                            <option value="">Sem preferência</option>
-                            <option value="manha">Manhã</option>
-                            <option value="noite">Noite</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="label" htmlFor="match-home-type">Tipo de imóvel</label>
-                          <select id="match-home-type" value={preferredHomeType} onChange={e => setPreferredHomeType(e.target.value as typeof preferredHomeType)} className="select-field w-full">
-                            <option value="">Sem preferência</option>
-                            <option value="casa">Casa</option>
-                            <option value="apartamento">Apartamento</option>
-                          </select>
+                  {!isPartnerFlow && (
+                    <div className="pt-2 border-t border-stroke">
+                      <label className="label mb-3">Preferências de ambiente (opcional)</label>
+                      <div className="flex flex-col gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setNeedsAirConditioning(v => !v)}
+                          className={needsAirConditioning ? 'toggle-chip-active' : 'toggle-chip'}
+                        >
+                          Preciso de ambiente com ar-condicionado
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNeedsBackyard(v => !v)}
+                          className={needsBackyard ? 'toggle-chip-active' : 'toggle-chip'}
+                        >
+                          Prefiro cuidador com quintal
+                        </button>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="label" htmlFor="match-walk-schedule">Horário de passeio</label>
+                            <select id="match-walk-schedule" value={preferredWalkSchedule} onChange={e => setPreferredWalkSchedule(e.target.value as typeof preferredWalkSchedule)} className="select-field w-full">
+                              <option value="">Sem preferência</option>
+                              <option value="manha">Manhã</option>
+                              <option value="noite">Noite</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="label" htmlFor="match-home-type">Tipo de imóvel</label>
+                            <select id="match-home-type" value={preferredHomeType} onChange={e => setPreferredHomeType(e.target.value as typeof preferredHomeType)} className="select-field w-full">
+                              <option value="">Sem preferência</option>
+                              <option value="casa">Casa</option>
+                              <option value="apartamento">Apartamento</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )}
@@ -343,7 +423,9 @@ export function MatchWizard() {
                       ))}
                     </div>
                     <p className="text-xs text-muted mt-1.5 px-1">
-                      Usamos as informações já salvas do pet (energia, sociabilidade) pra melhorar o match.
+                      {isPartnerFlow
+                        ? 'Usamos as informações do pet pra facilitar seu atendimento.'
+                        : 'Usamos as informações já salvas do pet (energia, sociabilidade) pra melhorar o match.'}
                     </p>
                   </div>
                 )}
@@ -381,15 +463,15 @@ export function MatchWizard() {
                       className="w-full p-4 rounded-2xl bg-background border-2 border-transparent focus:border-primary-400 outline-none text-sm text-ink resize-none transition-all"
                     />
                     <p className="text-xs text-muted mt-1.5 px-1">
-                      Quanto mais detalhes, melhor o cuidador poderá atender às necessidades do seu pet.
+                      Quanto mais detalhes, melhor o prestador poderá atender às necessidades do seu pet.
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ── Passo 4 — Orçamento ───────────────────────────── */}
-            {step === 4 && (
+            {/* ── Passo 4 — Orçamento (só Petsitter) ────────────── */}
+            {step === 4 && !isPartnerFlow && (
               <div className="flex-1 flex flex-col gap-6">
                 <div className="text-center flex flex-col items-center">
                   <div className="w-14 h-14 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center mb-3">
@@ -444,7 +526,7 @@ export function MatchWizard() {
             <div className="flex justify-between items-center mt-8 pt-6 border-t border-stroke">
               <button
                 onClick={() => setStep(s => s - 1)}
-                disabled={step === 1}
+                disabled={step === 0}
                 className="btn-ghost px-5 flex items-center gap-2 disabled:opacity-0 disabled:pointer-events-none transition-opacity"
               >
                 <ArrowLeft size={18} /> Voltar
