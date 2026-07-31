@@ -77,12 +77,23 @@ export function SearchPage() {
   const partners = partnerData?.data ?? []
 
   const handleReset = () => {
-    setFilters({})
-    setPartnerFilters({})
-    setSearch('')
+    if (tab === 'petsitter') {
+      setFilters({})
+      setSearch('')
+    } else {
+      setPartnerFilters({})
+    }
   }
 
+  const isPartnerTab = (t: 'petsitter' | 'clinica' | 'petshop') => t === 'clinica' || t === 'petshop'
+
   const handleTabChange = (next: 'petsitter' | 'clinica' | 'petshop') => {
+    // Switching between clinica <-> petshop: the service options differ per
+    // partner type, so a service chosen on one no longer maps to a valid
+    // radio on the other. Clear it, but keep city (valid across both).
+    if (isPartnerTab(tab) && isPartnerTab(next) && tab !== next) {
+      setPartnerFilters(f => ({ ...f, service: undefined }))
+    }
     setTab(next)
     const p = new URLSearchParams(searchParams)
     p.set('tab', next)
@@ -91,7 +102,11 @@ export function SearchPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setFilters(f => ({ ...f, city: search || undefined }))
+    if (tab === 'petsitter') {
+      setFilters(f => ({ ...f, city: search || undefined }))
+    } else {
+      setPartnerFilters(f => ({ ...f, city: search || undefined }))
+    }
   }
 
   return (
