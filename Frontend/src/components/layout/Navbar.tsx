@@ -45,7 +45,8 @@ export function Navbar({ onMenuClick }: NavbarProps) {
   if (!user) return null
 
   const isPetsitter = user.role === 'petsitter'
-  const profileHref = isPetsitter ? '/dashboard/petsitter?tab=perfil' : '/conta'
+  const isPartner = user.role === 'partner'
+  const profileHref = isPetsitter ? '/dashboard/petsitter?tab=perfil' : isPartner ? '/dashboard/partner' : '/conta'
   const messagesHref = isPetsitter ? '/dashboard/petsitter?tab=mensagens' : '/conta?tab=mensagens'
 
   return (
@@ -113,7 +114,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
                   <p className="text-sm font-semibold text-ink truncate">{user.name}</p>
                   <p className="text-xs text-muted truncate">{user.email}</p>
                   <span className="mt-1 inline-block badge badge-blue capitalize">
-                    {user.role === 'petsitter' ? 'Petsitter' : 'Tutor'}
+                    {user.role === 'petsitter' ? 'Petsitter' : user.role === 'partner' ? 'Parceiro' : user.role === 'admin' ? 'Admin' : 'Tutor'}
                   </span>
                 </div>
 

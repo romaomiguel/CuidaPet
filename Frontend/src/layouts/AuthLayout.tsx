@@ -10,6 +10,7 @@ export function AuthLayout() {
     let to = '/buscar'
     if (user.role === 'admin') to = '/admin'
     if (user.role === 'petsitter') to = '/dashboard/petsitter/perfil'
+    if (user.role === 'partner') to = '/dashboard/partner'
 
     return <Navigate to={to} replace />
   }

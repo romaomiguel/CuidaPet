@@ -1,6 +1,6 @@
 import {
   IsEmail,
-  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -49,10 +49,10 @@ export class CreateUserDto {
   cpf?: string;
 
   @ApiProperty({
-    enum: Role,
+    enum: [Role.tutor, Role.petsitter],
     description: 'Papel do usuário (tutor ou petsitter)',
   })
-  @IsEnum(Role)
+  @IsIn([Role.tutor, Role.petsitter], { message: 'Papel inválido para cadastro público.' })
   @IsNotEmpty()
   role: Role;
 

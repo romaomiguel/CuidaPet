@@ -68,7 +68,14 @@ export function PublicLayout() {
     { to: '/admin/users',      icon: <User size={15} />,            label: 'Usuários',     badge: undefined },
     { to: '/admin/petsitters', icon: <PawPrint size={15} />,        label: 'Petsitters',   badge: undefined },
   ]
-  const accountLinks = user?.role === 'admin' ? adminLinks : user?.role === 'petsitter' ? petsitterLinks : tutorLinks
+  const partnerLinks: typeof tutorLinks = [
+    { to: '/dashboard/partner', icon: <User size={15} />, label: 'Minha conta' },
+  ]
+  const accountLinks =
+    user?.role === 'admin' ? adminLinks :
+    user?.role === 'petsitter' ? petsitterLinks :
+    user?.role === 'partner' ? partnerLinks :
+    tutorLinks
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -138,7 +145,7 @@ export function PublicLayout() {
                         <p className="text-sm font-semibold text-ink truncate">{user.name}</p>
                         <p className="text-xs text-muted truncate">{user.email}</p>
                         <span className="mt-1 inline-block badge badge-blue">
-                          {user.role === 'petsitter' ? 'Petsitter' : 'Tutor'}
+                          {user.role === 'petsitter' ? 'Petsitter' : user.role === 'partner' ? 'Parceiro' : user.role === 'admin' ? 'Admin' : 'Tutor'}
                         </span>
                       </div>
                       {accountLinks.map(({ to, icon, label, badge }) => (
