@@ -13,22 +13,6 @@ enum Role {
   partner
 }
 
-enum ServiceType {
-  hospedagem
-  passeio
-  adestramento
-  banho_e_tosa
-  visita
-  creche
-  consulta_veterinaria
-  vacinacao
-  exames
-  cirurgia
-  internacao
-  venda_produtos
-  farmacia_veterinaria
-}
-
 enum PetSpecies {
   cachorro
   gato
@@ -80,7 +64,7 @@ model PetsitterProfile {
   userId       String        @unique
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   bio          String
-  services     ServiceType[]
+  services     String[]
   pricePerHour Float
   location     String
   city         String
@@ -119,7 +103,7 @@ model PartnerProfile {
   address         String
   city            String
   state           String
-  servicesOffered ServiceType[]
+  servicesOffered String[]
   photos          String[]      @default([])
   createdAt       DateTime      @default(now())
 }
@@ -133,6 +117,19 @@ model ServiceSuggestion {
   createdAt   DateTime @default(now())
 
   @@index([status, createdAt])
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  emoji       String
+  description String
+  audience    String   // "petsitter" | "clinica" | "petshop"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([audience, isActive])
 }
 
 model Pet {
@@ -162,7 +159,7 @@ model Booking {
   petsitterId String
   petsitter   User          @relation("PetsitterBookings", fields: [petsitterId], references: [id], onDelete: Cascade)
   pets        Pet[]
-  service     ServiceType
+  service     String
   startDate   DateTime
   endDate     DateTime
   status      BookingStatus @default(pending)
