@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Building2, Plus, X } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { partnerService } from '@/services/partner.service'
-import type { PartnerProfile } from '@/types'
+import type { PartnerProfile, ServiceType } from '@/types'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { serviceLabels, PARTNER_SERVICES_BY_TYPE } from '@/utils'
 
 const schema = z.object({
   name: z.string().min(1, 'Obrigatório'),
@@ -14,9 +15,14 @@ const schema = z.object({
   password: z.string().min(8, 'Mínimo 8 caracteres'),
   type: z.enum(['clinica', 'petshop']),
   businessName: z.string().min(1, 'Obrigatório'),
+  cnpj: z.string()
+    .regex(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, 'Formato: XX.XXX.XXX/XXXX-XX')
+    .optional()
+    .or(z.literal('')),
   address: z.string().min(1, 'Obrigatório'),
   city: z.string().min(1, 'Obrigatório'),
   state: z.string().min(1, 'Obrigatório'),
+  servicesOffered: z.array(z.string()),
 })
 type FormData = z.infer<typeof schema>
 
@@ -25,9 +31,17 @@ export function AdminPartnersPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, control, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: { type: 'clinica', servicesOffered: [] },
   })
+  const selectedType = watch('type')
+
+  // O tipo determina quais serviços aparecem no checklist; ao trocar de tipo, os
+  // serviços marcados até então não fazem mais sentido (as listas não se sobrepõem).
+  useEffect(() => {
+    setValue('servicesOffered', [])
+  }, [selectedType, setValue])
 
   const fetchPartners = async () => {
     try {
@@ -48,7 +62,11 @@ export function AdminPartnersPage() {
 
   const onSubmit = async (formData: FormData) => {
     try {
-      await partnerService.create(formData)
+      await partnerService.create({
+        ...formData,
+        cnpj: formData.cnpj || undefined,
+        servicesOffered: formData.servicesOffered as ServiceType[],
+      })
       toast.success('Parceiro cadastrado com sucesso!')
       reset()
       setShowForm(false)
@@ -82,9 +100,10 @@ export function AdminPartnersPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-3">Credenciais de acesso</p>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="label">Nome do contato</label>
+                <label className="label">Responsável (interno)</label>
                 <input {...register('name')} className="input-field mt-1.5" />
                 {errors.name && <p className="text-xs text-error-600 mt-1">{errors.name.message}</p>}
+                <p className="text-xs text-muted mt-1">Só pra referência interna — nunca aparece pro parceiro nem publicamente.</p>
               </div>
               <div>
                 <label className="label">E-mail de login</label>
@@ -117,6 +136,11 @@ export function AdminPartnersPage() {
                 {errors.businessName && <p className="text-xs text-error-600 mt-1">{errors.businessName.message}</p>}
               </div>
               <div>
+                <label className="label">CNPJ (opcional)</label>
+                <input {...register('cnpj')} placeholder="XX.XXX.XXX/XXXX-XX" className="input-field mt-1.5" />
+                {errors.cnpj && <p className="text-xs text-error-600 mt-1">{errors.cnpj.message}</p>}
+              </div>
+              <div>
                 <label className="label">Endereço</label>
                 <input {...register('address')} className="input-field mt-1.5" />
                 {errors.address && <p className="text-xs text-error-600 mt-1">{errors.address.message}</p>}
@@ -131,6 +155,25 @@ export function AdminPartnersPage() {
                 <input {...register('state')} className="input-field mt-1.5" />
                 {errors.state && <p className="text-xs text-error-600 mt-1">{errors.state.message}</p>}
               </div>
+              {selectedType && (
+                <div className="md:col-span-2">
+                  <label className="label mb-2">Serviços prestados</label>
+                  <Controller control={control} name="servicesOffered" render={({ field }) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {PARTNER_SERVICES_BY_TYPE[selectedType].map((s) => {
+                        const checked = field.value.includes(s)
+                        return (
+                          <button key={s} type="button"
+                            onClick={() => field.onChange(checked ? field.value.filter((v) => v !== s) : [...field.value, s])}
+                            className={checked ? 'toggle-chip-active' : 'toggle-chip'}>
+                            {serviceLabels[s]}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )} />
+                </div>
+              )}
             </div>
           </div>
 
