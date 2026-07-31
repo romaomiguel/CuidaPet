@@ -89,7 +89,7 @@ export const PARTNER_SERVICE_CARDS: Record<'clinica' | 'petshop', { type: Servic
     { type: 'consulta_veterinaria', emoji: '🩺' },
     { type: 'vacinacao',            emoji: '💉' },
     { type: 'exames',               emoji: '🔬' },
-    { type: 'cirurgia',             emoji: '⚕️' },
+    { type: 'cirurgia',             emoji: '🩹' },
     { type: 'internacao',           emoji: '🛏️' },
   ],
   petshop: [

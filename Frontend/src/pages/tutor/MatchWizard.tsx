@@ -74,8 +74,8 @@ const PARTNER_CARD_META: Partial<Record<ServiceType, { desc: string; ring: strin
   consulta_veterinaria: { desc: 'Diagnóstico e acompanhamento',  ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
   vacinacao:            { desc: 'Imunização em dia',             ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
   exames:                { desc: 'Laboratoriais e de imagem',    ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  cirurgia:              { desc: 'Procedimentos cirúrgicos',     ring: 'peer-checked:border-error-500',     bg: 'bg-error-50 text-error-600'         },
-  internacao:            { desc: 'Cuidado contínuo e monitorado', ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
+  cirurgia:              { desc: 'Procedimentos cirúrgicos',     ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
+  internacao:            { desc: 'Cuidado contínuo e monitorado', ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
   banho_e_tosa:          { desc: 'Limpeza e estética completa',  ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
   venda_produtos:        { desc: 'Ração, acessórios e mais',     ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
   farmacia_veterinaria:  { desc: 'Medicamentos e prescrições',   ring: 'peer-checked:border-error-500',     bg: 'bg-error-50 text-error-600'         },
@@ -205,8 +205,8 @@ export function MatchWizard() {
                         onChange={() => { setProviderType(type); setService('') }}
                         className="peer sr-only"
                       />
-                      <div className="h-full flex flex-col items-center justify-center text-center p-5 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:border-primary-500 peer-checked:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-300 peer-focus-visible:ring-offset-2">
-                        <span className="text-3xl mb-2">{emoji}</span>
+                      <div className="h-full flex flex-col items-center justify-center text-center p-5 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:border-primary-500 peer-checked:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2">
+                        <span className="text-3xl mb-2" aria-hidden="true">{emoji}</span>
                         <span className="font-semibold text-sm text-ink">{label}</span>
                         <span className="text-xs text-muted mt-0.5">{desc}</span>
                       </div>
@@ -228,9 +228,9 @@ export function MatchWizard() {
                   </h1>
                   <p className="text-muted">Selecione o serviço principal para encontrarmos a opção ideal.</p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="flex flex-wrap justify-center gap-4">
                   {serviceCards.map(({ type, emoji, desc, ring, bg }) => (
-                    <label key={type} className="relative cursor-pointer group">
+                    <label key={type} className="relative cursor-pointer group w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.6667rem)]">
                       <input
                         type="radio"
                         name="service"
@@ -239,10 +239,10 @@ export function MatchWizard() {
                         className="peer sr-only"
                       />
                       <div className={clsx(
-                        'h-full flex flex-col items-center justify-center p-4 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-300 peer-focus-visible:ring-offset-2',
+                        'h-full flex flex-col items-center justify-center p-4 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2',
                         ring ?? PARTNER_CARD_RING,
                       )}>
-                        <div className={clsx('w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2', bg ?? PARTNER_CARD_BG)}>
+                        <div className={clsx('w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2', bg ?? PARTNER_CARD_BG)} aria-hidden="true">
                           {emoji}
                         </div>
                         <span className="font-semibold text-sm text-ink text-center">{serviceLabels[type]}</span>
