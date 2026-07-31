@@ -15,6 +15,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { ChatModule } from './chat/chat.module';
 import { LocationCheckInsModule } from './location-checkins/location-checkins.module';
 import { SupportMessagesModule } from './support-messages/support-messages.module';
+import { ServicesModule } from './services/services.module';
 import { ServiceSuggestionsModule } from './service-suggestions/service-suggestions.module';
 
 @Module({
@@ -39,6 +40,7 @@ import { ServiceSuggestionsModule } from './service-suggestions/service-suggesti
     ChatModule,
     LocationCheckInsModule,
     SupportMessagesModule,
+    ServicesModule,
     ServiceSuggestionsModule,
   ],
   controllers: [AppController],
