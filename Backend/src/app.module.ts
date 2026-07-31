@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './storage/storage.module';
 import { UsersModule } from './users/users.module';
 import { PetsittersModule } from './petsitters/petsitters.module';
+import { PartnersModule } from './partners/partners.module';
 import { AuthModule } from './auth/auth.module';
 import { PetsModule } from './pets/pets.module';
 import { BookingsModule } from './bookings/bookings.module';
@@ -29,6 +30,7 @@ import { SupportMessagesModule } from './support-messages/support-messages.modul
     StorageModule,
     UsersModule,
     PetsittersModule,
+    PartnersModule,
     AuthModule,
     PetsModule,
     BookingsModule,
