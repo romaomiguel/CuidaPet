@@ -7,6 +7,7 @@ import { useAuthStore }    from '@/store/auth.store'
 import { LandingPage }           from '@/pages/public/LandingPage'
 import { SearchPage }            from '@/pages/public/SearchPage'
 import { PetsitterDetailPage }   from '@/pages/public/PetsitterDetailPage'
+import { PartnerDetailPage }     from '@/pages/public/PartnerDetailPage'
 import { HelpPage }              from '@/pages/public/HelpPage'
 import { HelpCategoryPage }      from '@/pages/public/HelpCategoryPage'
 import { HelpArticlePage }       from '@/pages/public/HelpArticlePage'
@@ -41,6 +42,7 @@ export default function App() {
         <Route index element={<LandingPage />} />
         <Route path="/buscar"           element={<SearchPage />} />
         <Route path="/petsitters/:id"   element={<PetsitterDetailPage />} />
+        <Route path="/parceiros/:id"    element={<PartnerDetailPage />} />
         <Route path="/ajuda"                  element={<HelpPage />} />
         <Route path="/ajuda/busca"            element={<HelpSearchResultsPage />} />
         <Route path="/ajuda/:categoria"       element={<HelpCategoryPage />} />
