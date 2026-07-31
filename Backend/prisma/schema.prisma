@@ -70,8 +70,9 @@ model User {
   reviewsGiven    Review[] @relation("TutorReviews")
   reviewsReceived Review[] @relation("PetsitterReviews")
 
-  refreshTokens RefreshToken[]
-  chatMessages  ChatMessage[]
+  refreshTokens      RefreshToken[]
+  chatMessages       ChatMessage[]
+  serviceSuggestions ServiceSuggestion[]
 }
 
 model PetsitterProfile {
@@ -121,6 +122,17 @@ model PartnerProfile {
   servicesOffered ServiceType[]
   photos          String[]      @default([])
   createdAt       DateTime      @default(now())
+}
+
+model ServiceSuggestion {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  description String
+  status      String   @default("pending") // "pending" | "reviewed"
+  createdAt   DateTime @default(now())
+
+  @@index([status, createdAt])
 }
 
 model Pet {
