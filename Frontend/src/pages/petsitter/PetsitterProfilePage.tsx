@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { petsitterService } from '@/services/petsitter.service'
 import { authService }      from '@/services/auth.service'
 import { userService }      from '@/services/user.service'
+import { serviceSuggestionService } from '@/services/serviceSuggestion.service'
 import { useAuthStore }     from '@/store/auth.store'
 import { serviceLabels, avatarUrl, PETSITTER_SERVICES } from '@/utils'
 import { GalleryManager } from '@/components/GalleryManager'
@@ -83,6 +84,8 @@ export function PetsitterProfilePage() {
   const [schedule, setSchedule] = useState<ScheduleConfig>(() =>
     DAYS.reduce((acc, d) => ({ ...acc, [d]: { ...DEFAULT_DAY } }), {} as ScheduleConfig)
   )
+  const [suggestion, setSuggestion] = useState('')
+  const [isSubmittingSuggestion, setIsSubmittingSuggestion] = useState(false)
 
   const { data: ps, isLoading } = useQuery({
     queryKey: ['petsitter', 'me'],
@@ -227,6 +230,20 @@ export function PetsitterProfilePage() {
       window.open(url, '_blank', 'noreferrer')
     } catch {
       toast.error('Não foi possível abrir o documento.')
+    }
+  }
+
+  const handleSuggestSubmit = async () => {
+    if (!suggestion.trim()) { toast.error('Descreva o serviço que você gostaria de oferecer.'); return }
+    try {
+      setIsSubmittingSuggestion(true)
+      await serviceSuggestionService.create(suggestion.trim())
+      setSuggestion('')
+      toast.success('Sugestão enviada! Nossa equipe vai avaliar.')
+    } catch {
+      // Erro real já vira toast pelo interceptor de resposta do axios.
+    } finally {
+      setIsSubmittingSuggestion(false)
     }
   }
 
@@ -476,6 +493,26 @@ export function PetsitterProfilePage() {
                   </div>
                 )} />
                 {errors.services && <p className="text-xs text-error-500">⚠ {errors.services.message}</p>}
+              </div>
+
+              <div className="card space-y-3">
+                <h2 className="font-heading text-xl font-bold text-primary-700">Não encontrou seu serviço?</h2>
+                <p className="text-sm text-muted -mt-1">Sugira um novo serviço — nossa equipe avalia e pode incluí-lo na plataforma.</p>
+                <textarea
+                  value={suggestion}
+                  onChange={e => setSuggestion(e.target.value)}
+                  rows={2}
+                  placeholder="Ex: Passeio noturno, transporte pet..."
+                  className="w-full p-4 rounded-2xl bg-background border-2 border-transparent focus:border-primary-400 outline-none text-sm text-ink resize-none transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={handleSuggestSubmit}
+                  disabled={isSubmittingSuggestion}
+                  className="btn-outline text-sm px-4 py-2 disabled:opacity-50"
+                >
+                  {isSubmittingSuggestion ? 'Enviando...' : 'Enviar sugestão'}
+                </button>
               </div>
 
               <div className="card space-y-4">

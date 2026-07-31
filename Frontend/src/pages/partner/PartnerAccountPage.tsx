@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { Building2, MapPin, Save, Camera } from 'lucide-react'
 import { partnerService } from '@/services/partner.service'
 import { userService } from '@/services/user.service'
+import { serviceSuggestionService } from '@/services/serviceSuggestion.service'
 import { useAuthStore } from '@/store/auth.store'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { GalleryManager } from '@/components/GalleryManager'
@@ -28,6 +29,8 @@ export function PartnerAccountPage() {
   const [loading, setLoading] = useState(true)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const [suggestion, setSuggestion] = useState('')
+  const [isSubmittingSuggestion, setIsSubmittingSuggestion] = useState(false)
 
   const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -86,6 +89,20 @@ export function PartnerAccountPage() {
 
   const handlePhotoUpload = async (file: File) => (await partnerService.addPhoto(file)).photos
   const handlePhotoRemove = async (index: number) => (await partnerService.removePhoto(index)).photos
+
+  const handleSuggestSubmit = async () => {
+    if (!suggestion.trim()) { toast.error('Descreva o serviço que você gostaria de oferecer.'); return }
+    try {
+      setIsSubmittingSuggestion(true)
+      await serviceSuggestionService.create(suggestion.trim())
+      setSuggestion('')
+      toast.success('Sugestão enviada! Nossa equipe vai avaliar.')
+    } catch {
+      // Erro real já vira toast pelo interceptor de resposta do axios.
+    } finally {
+      setIsSubmittingSuggestion(false)
+    }
+  }
 
   if (loading || !user) {
     return (
@@ -204,6 +221,26 @@ export function PartnerAccountPage() {
           onUpload={handlePhotoUpload}
           onRemove={handlePhotoRemove}
         />
+      </div>
+
+      <div className="card space-y-3">
+        <h2 className="font-heading text-xl font-bold text-primary-700">Não encontrou seu serviço?</h2>
+        <p className="text-sm text-muted -mt-1">Sugira um novo serviço — nossa equipe avalia e pode incluí-lo na plataforma.</p>
+        <textarea
+          value={suggestion}
+          onChange={e => setSuggestion(e.target.value)}
+          rows={2}
+          placeholder="Ex: Delivery de ração, banho a domicílio..."
+          className="w-full p-4 rounded-2xl bg-background border-2 border-transparent focus:border-primary-400 outline-none text-sm text-ink resize-none transition-all"
+        />
+        <button
+          type="button"
+          onClick={handleSuggestSubmit}
+          disabled={isSubmittingSuggestion}
+          className="btn-outline text-sm px-4 py-2 disabled:opacity-50"
+        >
+          {isSubmittingSuggestion ? 'Enviando...' : 'Enviar sugestão'}
+        </button>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
