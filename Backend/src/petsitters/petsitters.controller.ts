@@ -6,6 +6,7 @@ import {
   Body,
   Patch,
   Param,
+  ParseIntPipe,
   Query,
   UseGuards,
   UseInterceptors,
@@ -33,6 +34,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import {
   StorageService,
+  AVATAR_ALLOWED_EXTS,
   DOCUMENT_ALLOWED_EXTS,
   DOCUMENT_SIGNED_URL_TTL_SECONDS,
 } from '../storage/storage.service';
@@ -209,7 +211,7 @@ export class PetsittersController {
     if (!file) {
       throw new BadRequestException('Nenhum arquivo enviado.');
     }
-    const detected = await this.storageService.validateFileSignature(file.buffer, DOCUMENT_ALLOWED_EXTS);
+    const detected = await this.storageService.validateFileSignature(file.buffer, AVATAR_ALLOWED_EXTS);
     const path = `${user.id}/photos/${crypto.randomUUID()}.${detected.ext}`;
     await this.storageService.uploadObject(path, file.buffer, detected.mime);
     return this.petsittersService.addPhoto(user.id, path);
@@ -222,10 +224,10 @@ export class PetsittersController {
   @ApiOperation({ summary: 'Remover, pela posição no array, uma foto da galeria do petsitter logado' })
   @ApiResponse({ status: 400, description: 'Índice de foto inválido.' })
   removePhoto(
-    @Param('index') index: string,
+    @Param('index', ParseIntPipe) index: number,
     @CurrentUser() user: { id: string },
   ) {
-    return this.petsittersService.removePhoto(user.id, Number(index));
+    return this.petsittersService.removePhoto(user.id, index);
   }
 
   @Get('me/documents/:field/url')

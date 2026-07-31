@@ -228,4 +228,47 @@ describe('PetsittersService', () => {
       expect(result.photos).toEqual(['https://signed/a.jpg']);
     });
   });
+
+  describe('findOne', () => {
+    it('returns photos as signed URLs, not the raw stored paths', async () => {
+      (prisma.petsitterProfile.findUnique as jest.Mock).mockResolvedValue({
+        id: 'ps-1',
+        userId: 'user-1',
+        photos: ['user-1/photos/a.jpg', 'user-1/photos/b.jpg'],
+        user: { name: 'Fulano', avatar: null },
+      });
+      (storageService.createAvatarUrls as jest.Mock).mockResolvedValue(
+        new Map([
+          ['user-1/photos/a.jpg', 'https://signed/a.jpg'],
+          ['user-1/photos/b.jpg', 'https://signed/b.jpg'],
+        ]),
+      );
+
+      const result = await service.findOne('ps-1');
+
+      expect(result.photos).toEqual(['https://signed/a.jpg', 'https://signed/b.jpg']);
+      expect(result.photos).not.toEqual(
+        expect.arrayContaining(['user-1/photos/a.jpg', 'user-1/photos/b.jpg']),
+      );
+    });
+  });
+
+  describe('findByUserId', () => {
+    it('returns photos as signed URLs, not the raw stored paths, for an existing profile', async () => {
+      (prisma.petsitterProfile.findUnique as jest.Mock).mockResolvedValue({
+        id: 'ps-1',
+        userId: 'user-1',
+        photos: ['user-1/photos/a.jpg'],
+        user: { name: 'Fulano', email: 'a@a.com', phone: '', avatar: null },
+      });
+      (storageService.createAvatarUrls as jest.Mock).mockResolvedValue(
+        new Map([['user-1/photos/a.jpg', 'https://signed/a.jpg']]),
+      );
+
+      const result = await service.findByUserId('user-1');
+
+      expect(result.photos).toEqual(['https://signed/a.jpg']);
+      expect(result.photos).not.toContain('user-1/photos/a.jpg');
+    });
+  });
 });
