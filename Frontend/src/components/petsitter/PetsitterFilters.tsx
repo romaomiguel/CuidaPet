@@ -1,6 +1,6 @@
 import { X, SlidersHorizontal } from 'lucide-react'
 import type { PetsitterFilters as Filters } from '@/types'
-import { serviceLabels } from '@/utils'
+import { serviceLabels, PETSITTER_SERVICES } from '@/utils'
 
 interface PetsitterFiltersProps {
   filters: Filters
@@ -9,7 +9,7 @@ interface PetsitterFiltersProps {
   resultCount?: number
 }
 
-const SERVICES = Object.entries(serviceLabels) as [string, string][]
+const SERVICES = PETSITTER_SERVICES.map((s) => [s, serviceLabels[s]] as [string, string])
 
 const RATINGS = [
   { value: '4.5', label: '4.5+ ⭐' },

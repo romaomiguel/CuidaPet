@@ -45,6 +45,7 @@ export function getInitials(name: string): string {
     .join('')
 }
 
+// Never iterate this directly to build a picker/filter list — use the role-scoped PETSITTER_SERVICES / PARTNER_SERVICES_BY_TYPE below instead.
 export const serviceLabels: Record<ServiceType, string> = {
   hospedagem: 'Hospedagem',
   passeio: 'Passeio',

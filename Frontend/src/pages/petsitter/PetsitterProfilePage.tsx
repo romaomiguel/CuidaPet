@@ -414,8 +414,16 @@ export function PetsitterProfilePage() {
               <p className="text-sm text-muted -mt-1">Fotos do seu espaço/trabalho, exibidas no seu perfil público.</p>
               <GalleryManager
                 photos={ps?.photos ?? []}
-                onUpload={async (file) => (await petsitterService.addPhoto(file)).photos}
-                onRemove={async (index) => (await petsitterService.removePhoto(index)).photos}
+                onUpload={async (file) => {
+                  const { photos } = await petsitterService.addPhoto(file)
+                  queryClient.invalidateQueries({ queryKey: ['petsitter', 'me'] })
+                  return photos
+                }}
+                onRemove={async (index) => {
+                  const { photos } = await petsitterService.removePhoto(index)
+                  queryClient.invalidateQueries({ queryKey: ['petsitter', 'me'] })
+                  return photos
+                }}
               />
             </div>
           </div>

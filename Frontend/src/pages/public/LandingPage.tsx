@@ -9,7 +9,7 @@ import { petsitterService } from '@/services/petsitter.service'
 import { CardPetsitter }    from '@/components/petsitter/CardPetsitter'
 import { SkeletonPetsitterCard } from '@/components/ui/Skeleton'
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete'
-import { serviceLabels } from '@/utils'
+import { serviceLabels, PETSITTER_SERVICES } from '@/utils'
 import type { ServiceType } from '@/types'
 
 const MATCH_STEPS = [
@@ -127,9 +127,12 @@ export function LandingPage() {
                   className="sm:w-40 px-3 py-2 rounded-pill text-sm text-ink outline-none bg-background cursor-pointer"
                 >
                   <option value="">Serviço</option>
-                  {Object.entries(serviceLabels).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
+                  {PETSITTER_SERVICES.map((k) => {
+                    const v = serviceLabels[k]
+                    return (
+                      <option key={k} value={k}>{v}</option>
+                    )
+                  })}
                 </select>
                 <button type="submit" className="btn-primary flex-shrink-0 text-sm">
                   <Search size={14} /> Buscar
