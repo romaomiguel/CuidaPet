@@ -44,9 +44,9 @@ export class ServiceSuggestionsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @ApiOperation({ summary: '[ADMIN] Marcar sugestão como revisada' })
+  @ApiOperation({ summary: '[ADMIN] Atualizar o status de uma sugestão' })
   @ApiResponse({ status: 404, description: 'Sugestão não encontrada.' })
-  updateStatus(@Param('id') id: string, @Body() _dto: UpdateServiceSuggestionStatusDto) {
-    return this.service.markReviewed(id);
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateServiceSuggestionStatusDto) {
+    return this.service.setStatus(id, dto.status);
   }
 }

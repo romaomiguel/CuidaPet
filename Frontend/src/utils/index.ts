@@ -82,21 +82,31 @@ export const PROVIDER_TYPE_OPTIONS: { type: ProviderType; label: string; emoji: 
   { type: 'petshop',   label: 'Petshop',   emoji: '🛍️', desc: 'Banho, tosa e produtos' },
 ]
 
+/** Emoji por ServiceType B2B — única anotação mantida à parte; o CONJUNTO de serviços
+ * vem sempre de PARTNER_SERVICES_BY_TYPE (ver PARTNER_SERVICE_CARDS abaixo). */
+const PARTNER_SERVICE_EMOJI: Record<ServiceType, string> = {
+  consulta_veterinaria: '🩺',
+  vacinacao:            '💉',
+  exames:               '🔬',
+  cirurgia:             '🩹',
+  internacao:           '🛏️',
+  banho_e_tosa:         '🛁',
+  venda_produtos:       '🛍️',
+  farmacia_veterinaria: '💊',
+  // Sem card dedicado no MatchWizard B2B — presentes só pra satisfazer o Record<ServiceType, ...>.
+  hospedagem:   '🏠',
+  passeio:      '🦮',
+  adestramento: '🎓',
+  visita:       '🚪',
+  creche:       '🎾',
+}
+
 /** Cards de serviço no estilo do MatchWizard (emoji, não ícone Lucide) — só os B2B, pra
- * quando o tutor escolhe Clínica/Petshop no Step 0. */
+ * quando o tutor escolhe Clínica/Petshop no Step 0. Deriva o CONJUNTO de serviços de
+ * PARTNER_SERVICES_BY_TYPE (fonte única de verdade) — só o emoji é anotado aqui. */
 export const PARTNER_SERVICE_CARDS: Record<'clinica' | 'petshop', { type: ServiceType; emoji: string }[]> = {
-  clinica: [
-    { type: 'consulta_veterinaria', emoji: '🩺' },
-    { type: 'vacinacao',            emoji: '💉' },
-    { type: 'exames',               emoji: '🔬' },
-    { type: 'cirurgia',             emoji: '🩹' },
-    { type: 'internacao',           emoji: '🛏️' },
-  ],
-  petshop: [
-    { type: 'banho_e_tosa',         emoji: '🛁' },
-    { type: 'venda_produtos',       emoji: '🛍️' },
-    { type: 'farmacia_veterinaria', emoji: '💊' },
-  ],
+  clinica: PARTNER_SERVICES_BY_TYPE.clinica.map(type => ({ type, emoji: PARTNER_SERVICE_EMOJI[type] })),
+  petshop: PARTNER_SERVICES_BY_TYPE.petshop.map(type => ({ type, emoji: PARTNER_SERVICE_EMOJI[type] })),
 }
 
 export const speciesLabels: Record<string, string> = {

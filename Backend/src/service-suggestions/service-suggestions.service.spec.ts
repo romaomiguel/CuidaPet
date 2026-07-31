@@ -69,24 +69,37 @@ describe('ServiceSuggestionsService', () => {
     });
   });
 
-  describe('markReviewed', () => {
+  describe('setStatus', () => {
     it('throws NotFoundException when the suggestion does not exist', async () => {
       prisma.serviceSuggestion.findUnique.mockResolvedValue(null);
 
-      await expect(service.markReviewed('missing-id')).rejects.toThrow(NotFoundException);
+      await expect(service.setStatus('missing-id', 'reviewed')).rejects.toThrow(NotFoundException);
     });
 
     it('updates status to reviewed', async () => {
       prisma.serviceSuggestion.findUnique.mockResolvedValue({ id: 'sugg-1' });
       prisma.serviceSuggestion.update.mockResolvedValue({ id: 'sugg-1', status: 'reviewed' });
 
-      const result = await service.markReviewed('sugg-1');
+      const result = await service.setStatus('sugg-1', 'reviewed');
 
       expect(prisma.serviceSuggestion.update).toHaveBeenCalledWith({
         where: { id: 'sugg-1' },
         data: { status: 'reviewed' },
       });
       expect(result.status).toBe('reviewed');
+    });
+
+    it('honors whatever status is passed in, not just "reviewed"', async () => {
+      prisma.serviceSuggestion.findUnique.mockResolvedValue({ id: 'sugg-2' });
+      prisma.serviceSuggestion.update.mockResolvedValue({ id: 'sugg-2', status: 'pending' });
+
+      const result = await service.setStatus('sugg-2', 'pending');
+
+      expect(prisma.serviceSuggestion.update).toHaveBeenCalledWith({
+        where: { id: 'sugg-2' },
+        data: { status: 'pending' },
+      });
+      expect(result.status).toBe('pending');
     });
   });
 });

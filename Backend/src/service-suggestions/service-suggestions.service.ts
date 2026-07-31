@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceSuggestionDto } from './dto/create-service-suggestion.dto';
+import { ServiceSuggestionStatus } from './dto/update-service-suggestion-status.dto';
 
 @Injectable()
 export class ServiceSuggestionsService {
@@ -34,7 +35,7 @@ export class ServiceSuggestionsService {
     return { data, total, page, pageSize: limit, totalPages: Math.ceil(total / limit) };
   }
 
-  async markReviewed(id: string) {
+  async setStatus(id: string, status: ServiceSuggestionStatus) {
     const existing = await this.prisma.serviceSuggestion.findUnique({ where: { id } });
     if (!existing) {
       throw new NotFoundException('Sugestão não encontrada.');
@@ -42,7 +43,7 @@ export class ServiceSuggestionsService {
 
     return this.prisma.serviceSuggestion.update({
       where: { id },
-      data: { status: 'reviewed' },
+      data: { status },
     });
   }
 }

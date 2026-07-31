@@ -50,8 +50,9 @@ export function SearchPage() {
     if (filters.service)    p.set('service',   filters.service)
     if (filters.minRating)  p.set('minRating', String(filters.minRating))
     if (filters.maxPrice)   p.set('maxPrice',  String(filters.maxPrice))
+    if (tab !== 'petsitter') p.set('tab', tab)
     setSearchParams(p, { replace: true })
-  }, [filters, setSearchParams])
+  }, [filters, tab, setSearchParams])
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['petsitters', filters],
