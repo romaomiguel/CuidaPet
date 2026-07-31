@@ -131,6 +131,75 @@ describe('PartnersService', () => {
     });
   });
 
+  describe('findAll', () => {
+    it('only includes partners whose user is active', async () => {
+      prisma.partnerProfile.findMany.mockResolvedValue([]);
+      prisma.partnerProfile.count.mockResolvedValue(0);
+
+      await service.findAll({});
+
+      expect(prisma.partnerProfile.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ user: { isActive: true } }),
+        }),
+      );
+    });
+
+    it('filters by type, service, and city, and paginates', async () => {
+      prisma.partnerProfile.findMany.mockResolvedValue([
+        {
+          id: 'profile-1',
+          type: 'clinica',
+          businessName: 'Clínica Pet Bem',
+          address: 'Rua A, 100',
+          city: 'Cuiabá',
+          state: 'MT',
+          servicesOffered: ['consulta_veterinaria'],
+          photos: [],
+          user: { name: 'Clínica Pet Bem', avatar: null },
+        },
+      ]);
+      prisma.partnerProfile.count.mockResolvedValue(1);
+
+      const result = await service.findAll({
+        type: 'clinica' as any,
+        service: 'consulta_veterinaria' as any,
+        city: 'Cuiabá',
+        page: 1,
+        limit: 20,
+      });
+
+      expect(prisma.partnerProfile.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            type: 'clinica',
+            servicesOffered: { has: 'consulta_veterinaria' },
+            city: { contains: 'Cuiabá', mode: 'insensitive' },
+          }),
+          skip: 0,
+          take: 20,
+        }),
+      );
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+
+    it('never selects email, cnpj, contactName, or isActive', async () => {
+      prisma.partnerProfile.findMany.mockResolvedValue([]);
+      prisma.partnerProfile.count.mockResolvedValue(0);
+
+      await service.findAll({});
+
+      const call = prisma.partnerProfile.findMany.mock.calls[0][0];
+      expect(call.select).toBeDefined();
+      expect(call.select).not.toHaveProperty('email');
+      expect(call.select).not.toHaveProperty('cnpj');
+      expect(call.select).not.toHaveProperty('contactName');
+      expect(call.select.user.select).not.toHaveProperty('isActive');
+      expect(call.select.user.select).not.toHaveProperty('email');
+    });
+  });
+
   describe('findByUserId', () => {
     it('throws NotFoundException when no profile exists for the user', async () => {
       prisma.partnerProfile.findUnique.mockResolvedValue(null);

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { PartnerType } from '@prisma/client';
+import { PartnerType, ServiceType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService, AVATAR_SIGNED_URL_TTL_SECONDS } from '../storage/storage.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
@@ -211,5 +211,54 @@ export class PartnersService {
     }
 
     return this.withPhotoUrls(await this.withAvatarUrl(profile));
+  }
+
+  /**
+   * Listagem PÚBLICA — mesmo shape público-seguro de `findOne`, só que paginada e
+   * filtrável. Exclui parceiros suspensos (`user.isActive = false`) — diferente de
+   * `findOne`, que não filtra isso (padrão pré-existente); esta é a primeira rota de
+   * listagem de fato alcançável por busca, então fecha essa lacuna aqui.
+   */
+  async findAll(
+    filters: { type?: PartnerType; service?: ServiceType; city?: string; page?: number; limit?: number } = {},
+  ) {
+    const { type, service, city, page = 1, limit = 20 } = filters;
+
+    const where: {
+      user: { isActive: true };
+      type?: PartnerType;
+      servicesOffered?: { has: ServiceType };
+      city?: { contains: string; mode: 'insensitive' };
+    } = { user: { isActive: true } };
+    if (type) where.type = type;
+    if (service) where.servicesOffered = { has: service };
+    if (city) where.city = { contains: city, mode: 'insensitive' };
+
+    const skip = (page - 1) * limit;
+
+    const [rows, total] = await Promise.all([
+      this.prisma.partnerProfile.findMany({
+        where,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          type: true,
+          businessName: true,
+          address: true,
+          city: true,
+          state: true,
+          servicesOffered: true,
+          photos: true,
+          user: { select: { name: true, avatar: true } },
+        },
+      }),
+      this.prisma.partnerProfile.count({ where }),
+    ]);
+
+    // withAvatarUrl é async — resolver por linha antes de withPhotoUrls:
+    const resolved = await Promise.all(rows.map(async (r) => this.withPhotoUrls(await this.withAvatarUrl(r))));
+
+    return { data: resolved, total, page, pageSize: limit, totalPages: Math.ceil(total / limit) };
   }
 }
