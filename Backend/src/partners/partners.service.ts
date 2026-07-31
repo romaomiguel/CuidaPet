@@ -24,7 +24,7 @@ export class PartnersService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         name: dto.name,
         email: dto.email,
@@ -44,13 +44,10 @@ export class PartnersService {
       },
       select: {
         id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        partnerProfile: true,
       },
     });
+
+    return this.findByUserId(user.id);
   }
 
   async findAllForAdmin(
@@ -99,6 +96,15 @@ export class PartnersService {
         city: dto.city,
         state: dto.state,
         servicesOffered: dto.servicesOffered,
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            isActive: true,
+          },
+        },
       },
     });
   }

@@ -52,12 +52,13 @@ describe('PartnersService', () => {
 
     it('creates a User(role=partner) + PartnerProfile and hashes the password', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue({
-        id: 'user-1',
-        name: dto.name,
-        email: dto.email,
-        role: 'partner',
-        partnerProfile: { id: 'profile-1', type: dto.type, businessName: dto.businessName },
+      prisma.user.create.mockResolvedValue({ id: 'user-1' });
+      prisma.partnerProfile.findUnique.mockResolvedValue({
+        id: 'profile-1',
+        userId: 'user-1',
+        type: dto.type,
+        businessName: dto.businessName,
+        user: { name: dto.name, email: dto.email, isActive: true },
       });
 
       const result = await service.create(dto);
@@ -78,7 +79,9 @@ describe('PartnersService', () => {
           }),
         }),
       );
-      expect(result.email).toBe(dto.email);
+      expect(result.type).toBe(dto.type);
+      expect(result.businessName).toBe(dto.businessName);
+      expect(result.user.email).toBe(dto.email);
     });
 
     it('throws ConflictException when the email is already in use', async () => {
@@ -130,15 +133,31 @@ describe('PartnersService', () => {
 
   describe('update', () => {
     it('updates only the fields present in the DTO, scoped to the owning user', async () => {
-      prisma.partnerProfile.update.mockResolvedValue({ id: 'profile-1', businessName: 'Novo Nome' });
+      prisma.partnerProfile.update.mockResolvedValue({
+        id: 'profile-1',
+        businessName: 'Novo Nome',
+        user: { name: 'Ana Souza', email: 'ana@example.com', isActive: true },
+      });
 
       const result = await service.update('user-1', { businessName: 'Novo Nome' });
 
-      expect(prisma.partnerProfile.update).toHaveBeenCalledWith({
-        where: { userId: 'user-1' },
-        data: { businessName: 'Novo Nome' },
-      });
+      expect(prisma.partnerProfile.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user-1' },
+          data: { businessName: 'Novo Nome' },
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+                isActive: true,
+              },
+            },
+          },
+        }),
+      );
       expect(result.businessName).toBe('Novo Nome');
+      expect(result.user.email).toBe('ana@example.com');
     });
   });
 });
