@@ -1,5 +1,5 @@
 // ─── Auth ─────────────────────────────────────────────────────────────────────
-export type UserRole = 'tutor' | 'petsitter' | 'admin'
+export type UserRole = 'tutor' | 'petsitter' | 'admin' | 'partner'
 
 export interface User {
   id: string
@@ -99,6 +99,44 @@ export interface PetsitterFilters {
   maxPrice?: number
   minRating?: number
   availability?: string
+}
+
+// ─── Partner (B2B) ─────────────────────────────────────────────────────────────
+export type PartnerType = 'clinica' | 'petshop'
+
+export interface PartnerProfile {
+  id: string
+  userId: string
+  user: { name: string; email: string; isActive: boolean }
+  type: PartnerType
+  businessName: string
+  cnpj?: string
+  address: string
+  city: string
+  state: string
+  servicesOffered: ServiceType[]
+  createdAt: string
+}
+
+export interface CreatePartnerPayload {
+  name: string
+  email: string
+  password: string
+  type: PartnerType
+  businessName: string
+  cnpj?: string
+  address: string
+  city: string
+  state: string
+  servicesOffered?: ServiceType[]
+}
+
+export interface UpdatePartnerPayload {
+  businessName?: string
+  address?: string
+  city?: string
+  state?: string
+  servicesOffered?: ServiceType[]
 }
 
 // ─── Pet ──────────────────────────────────────────────────────────────────────
