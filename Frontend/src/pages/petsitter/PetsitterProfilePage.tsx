@@ -7,7 +7,8 @@ import { petsitterService } from '@/services/petsitter.service'
 import { authService }      from '@/services/auth.service'
 import { userService }      from '@/services/user.service'
 import { useAuthStore }     from '@/store/auth.store'
-import { serviceLabels, avatarUrl } from '@/utils'
+import { serviceLabels, avatarUrl, PETSITTER_SERVICES } from '@/utils'
+import { GalleryManager } from '@/components/GalleryManager'
 import { IS_MOCK_MODE }     from '@/lib/mock'
 import {
   Camera, Save, MapPin, Phone, DollarSign, AlertTriangle, User, Clock, FileText,
@@ -17,7 +18,7 @@ import type { ServiceType } from '@/types'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
-const SERVICES = Object.keys(serviceLabels) as ServiceType[]
+const SERVICES = PETSITTER_SERVICES
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
 const WEEKEND_DAYS = ['Sábado', 'Domingo']
 
@@ -406,6 +407,16 @@ export function PetsitterProfilePage() {
                   <p>Documentação rejeitada. Envie documentos mais nítidos ou fale com o suporte.</p>
                 </div>
               )}
+            </div>
+
+            <div className="card space-y-4">
+              <h2 className="font-heading text-xl font-bold text-primary-700">Galeria</h2>
+              <p className="text-sm text-muted -mt-1">Fotos do seu espaço/trabalho, exibidas no seu perfil público.</p>
+              <GalleryManager
+                photos={ps?.photos ?? []}
+                onUpload={async (file) => (await petsitterService.addPhoto(file)).photos}
+                onRemove={async (index) => (await petsitterService.removePhoto(index)).photos}
+              />
             </div>
           </div>
         )}
