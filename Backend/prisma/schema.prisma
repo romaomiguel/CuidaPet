@@ -20,6 +20,13 @@ enum ServiceType {
   banho_e_tosa
   visita
   creche
+  consulta_veterinaria
+  vacinacao
+  exames
+  cirurgia
+  internacao
+  venda_produtos
+  farmacia_veterinaria
 }
 
 enum PetSpecies {
@@ -106,11 +113,13 @@ model PartnerProfile {
   user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   type            PartnerType
   businessName    String
+  contactName     String?
   cnpj            String?       @unique
   address         String
   city            String
   state           String
   servicesOffered ServiceType[]
+  photos          String[]      @default([])
   createdAt       DateTime      @default(now())
 }
 
