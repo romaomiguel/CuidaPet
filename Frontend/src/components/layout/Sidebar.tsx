@@ -10,6 +10,7 @@ import {
   MessageCircle,
   ArrowLeft,
   Building2,
+  Lightbulb,
 } from 'lucide-react'
 import clsx from 'clsx'
 import type { UserRole } from '@/types'
@@ -60,6 +61,7 @@ const adminNav: NavItem[] = [
   { label: 'Usuários',       to: '/admin/users',              icon: <User size={18} /> },
   { label: 'Petsitters',     to: '/admin/petsitters',         icon: <PawPrint size={18} /> },
   { label: 'Parceiros',      to: '/admin/partners',           icon: <Building2 size={18} /> },
+  { label: 'Sugestões',      to: '/admin/sugestoes-servico',  icon: <Lightbulb size={18} /> },
   { label: 'Suporte',        to: '/admin/suporte',            icon: <MessageCircle size={18} /> },
 ]
 
