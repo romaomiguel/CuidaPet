@@ -45,9 +45,14 @@ const petsitterNav: NavItem[] = [
   { label: 'Meu Perfil',     to: '/dashboard/petsitter?tab=perfil',      icon: <Settings size={18} />,      tab: 'perfil' },
 ]
 
+const partnerNav: NavItem[] = [
+  { label: 'Meu Perfil',     to: '/dashboard/partner',                   icon: <Settings size={18} /> },
+]
+
 const HUB_PATH: Partial<Record<UserRole, string>> = {
   tutor: '/conta',
   petsitter: '/dashboard/petsitter',
+  partner: '/dashboard/partner',
 }
 
 const adminNav: NavItem[] = [
@@ -66,6 +71,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
   let navItems = tutorNav
   if (role === 'petsitter') navItems = petsitterNav
   if (role === 'admin') navItems = adminNav
+  if (role === 'partner') navItems = partnerNav
 
   const location = useLocation()
   const hubPath = HUB_PATH[role]
@@ -105,7 +111,7 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
       </div>
 
       {/* ── Voltar para a Home — fora da lista de navegação, não é uma opção de aba ── */}
-      {(role === 'tutor' || role === 'petsitter') && (
+      {(role === 'tutor' || role === 'petsitter' || role === 'partner') && (
         <div className="px-6 pb-2 flex-shrink-0">
           <Link
             to="/"
@@ -153,10 +159,12 @@ export function Sidebar({ role, isOpen, onClose }: SidebarProps) {
           role === 'petsitter' && 'bg-secondary-100 text-secondary-700',
           role === 'admin' && 'bg-error-50 text-error-600',
           role === 'tutor' && 'bg-primary-100 text-primary-700',
+          role === 'partner' && 'bg-green-100 text-green-700',
         )}>
           {role === 'petsitter' && '🐕 Petsitter'}
           {role === 'admin' && '👑 Admin'}
           {role === 'tutor' && '🐾 Tutor'}
+          {role === 'partner' && '🏪 Parceiro'}
         </span>
       </div>
     </aside>

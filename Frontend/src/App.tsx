@@ -18,6 +18,7 @@ import { AccountPage }           from '@/pages/account/AccountPage'
 import { MatchWizard }           from '@/pages/tutor/MatchWizard'
 import { MatchResults }          from '@/pages/tutor/MatchResults'
 import { PetsitterAccountPage }    from '@/pages/petsitter/PetsitterAccountPage'
+import { PartnerAccountPage }      from '@/pages/partner/PartnerAccountPage'
 import { AdminDashboardPage }      from '@/pages/admin/AdminDashboardPage'
 import { AdminUsersPage }          from '@/pages/admin/AdminUsersPage'
 import { AdminPetsittersPage }     from '@/pages/admin/AdminPetsittersPage'
@@ -82,6 +83,11 @@ export default function App() {
         } />
         <Route path="/dashboard/petsitter/agendamentos" element={
           <ProtectedRoute allowedRoles={['petsitter']}><Navigate to="/dashboard/petsitter?tab=pendentes" replace /></ProtectedRoute>
+        } />
+
+        {/* Área do Parceiro (Clínica/Petshop) */}
+        <Route path="/dashboard/partner" element={
+          <ProtectedRoute allowedRoles={['partner']}><PartnerAccountPage /></ProtectedRoute>
         } />
       </Route>
 

@@ -37,7 +37,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     // Authenticated but wrong role — send to their own dashboard
-    const fallback = user.role === 'petsitter' ? '/dashboard/petsitter' : '/dashboard'
+    const fallback =
+      user.role === 'petsitter' ? '/dashboard/petsitter' :
+      user.role === 'partner'   ? '/dashboard/partner' :
+      '/dashboard'
     return <Navigate to={fallback} replace />
   }
 

@@ -33,6 +33,8 @@ export function LoginPage() {
         navigate('/admin')
       } else if (user.role === 'petsitter') {
         navigate('/dashboard/petsitter/perfil')
+      } else if (user.role === 'partner') {
+        navigate('/dashboard/partner')
       } else {
         navigate('/buscar')
       }
