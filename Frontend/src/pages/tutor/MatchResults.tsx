@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { petsitterService } from '@/services/petsitter.service'
+import { partnerService } from '@/services/partner.service'
 import type { MatchResult } from '@/services/petsitter.service'
 import { MapPin, ArrowLeft, Sparkles } from 'lucide-react'
 import { avatarUrl, serviceLabels } from '@/utils'
-import type { ServiceType } from '@/types'
+import type { ServiceType, PartnerType } from '@/types'
+import { CardPartner } from '@/components/partner/CardPartner'
 import clsx from 'clsx'
 
 // ── Badge de % de match, cor por faixa ───────────────────────────────────────
@@ -15,7 +17,7 @@ function matchBadgeClass(score: number) {
   return 'bg-primary-100 text-primary-700'
 }
 
-// ── Card em destaque (1º colocado) ───────────────────────────────────────────
+// ── Card em destaque (1º colocado — só Petsitter) ────────────────────────────
 
 function TopMatchCard({ ps }: { ps: MatchResult }) {
   const navigate = useNavigate()
@@ -66,7 +68,7 @@ function TopMatchCard({ ps }: { ps: MatchResult }) {
   )
 }
 
-// ── Linha de match padrão ────────────────────────────────────────────────────
+// ── Linha de match padrão (Petsitter) ────────────────────────────────────────
 
 function MatchRow({ ps }: { ps: MatchResult }) {
   const navigate = useNavigate()
@@ -116,6 +118,9 @@ export function MatchResults() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
+  const providerType = (searchParams.get('providerType') || 'petsitter') as 'petsitter' | 'clinica' | 'petshop'
+  const isPartnerFlow = providerType === 'clinica' || providerType === 'petshop'
+
   const service      = searchParams.get('service')      || ''
   const species      = searchParams.get('species')      || ''
   const city         = searchParams.get('city')         || ''
@@ -132,14 +137,23 @@ export function MatchResults() {
   const preferredWalkSchedule = searchParams.get('preferredWalkSchedule') as 'manha' | 'noite' | undefined
   const preferredHomeType     = searchParams.get('preferredHomeType') as 'casa' | 'apartamento' | undefined
 
-  const { data: matches, isLoading } = useQuery({
+  const { data: matches, isLoading: isLoadingPetsitters } = useQuery({
     queryKey: ['match', { service, species, city, neighborhood, date, startTime, endTime, endDate, maxPrice, petEnergyLevel, petSocialLevel, needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType }],
     queryFn:  () => petsitterService.getMatches({
       service, species, city, neighborhood, date, startTime, endTime, endDate, maxPrice,
       petEnergyLevel, petSocialLevel, needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType,
     }),
-    enabled: !!service && !!species && !!city,
+    enabled: !isPartnerFlow && !!service && !!species && !!city,
   })
+
+  const { data: partnerResults, isLoading: isLoadingPartners, isError: isErrorPartners, refetch: refetchPartners } = useQuery({
+    queryKey: ['partner-match', { providerType, service, city }],
+    queryFn:  () => partnerService.list({ type: providerType as PartnerType, service: service as ServiceType, city, limit: 50 }),
+    enabled: isPartnerFlow && !!service && !!city,
+  })
+
+  const isLoading = isPartnerFlow ? isLoadingPartners : isLoadingPetsitters
+  const partners = partnerResults?.data ?? []
 
   // ── Loading ───────────────────────────────────────────────────────────────
 
@@ -150,13 +164,80 @@ export function MatchResults() {
           <div className="w-16 h-16 border-4 border-primary-100 border-t-primary-500 rounded-full animate-spin" />
           <Sparkles size={22} className="absolute inset-0 m-auto text-primary-500 animate-pulse" />
         </div>
-        <p className="text-ink font-semibold text-lg">Encontrando seu match perfeito…</p>
-        <p className="text-muted text-sm">Analisando disponibilidade, localização e avaliações</p>
+        <p className="text-ink font-semibold text-lg">
+          {isPartnerFlow ? 'Buscando parceiros na sua região…' : 'Encontrando seu match perfeito…'}
+        </p>
+        <p className="text-muted text-sm">
+          {isPartnerFlow ? 'Verificando serviços e localização' : 'Analisando disponibilidade, localização e avaliações'}
+        </p>
       </div>
     )
   }
 
-  // ── Sem resultados ────────────────────────────────────────────────────────
+  // ── Resultado: parceiro (lista filtrada, sem score) ──────────────────────
+
+  if (isPartnerFlow) {
+    if (isErrorPartners) {
+      return (
+        <div className="max-w-lg mx-auto px-4 py-20 text-center">
+          <div className="text-6xl mb-4">📡</div>
+          <h2 className="font-heading text-2xl font-bold text-ink mb-2">Não conseguimos buscar parceiros agora</h2>
+          <p className="text-muted mb-8">
+            Tivemos um problema para carregar {providerType === 'clinica' ? 'as clínicas' : 'os petshops'} da sua região. Tente novamente em instantes.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button onClick={() => refetchPartners()} className="btn-primary">
+              Tentar novamente
+            </button>
+            <button onClick={() => navigate('/match')} className="btn-secondary">
+              Refazer a busca
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    if (partners.length === 0) {
+      return (
+        <div className="max-w-lg mx-auto px-4 py-20 text-center">
+          <div className="text-6xl mb-4">😿</div>
+          <h2 className="font-heading text-2xl font-bold text-ink mb-2">Nenhum parceiro encontrado</h2>
+          <p className="text-muted mb-8">
+            Não encontramos {providerType === 'clinica' ? 'clínicas' : 'petshops'} com esse serviço na sua cidade ainda.
+          </p>
+          <button onClick={() => navigate('/match')} className="btn-primary">
+            Refazer a busca
+          </button>
+        </div>
+      )
+    }
+
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-10">
+        <button
+          onClick={() => navigate('/match')}
+          className="flex items-center gap-2 text-muted hover:text-primary-600 transition-colors mb-8 font-semibold text-sm"
+        >
+          <ArrowLeft size={16} /> Refazer busca
+        </button>
+
+        <div className="text-center mb-10">
+          <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-primary-800 mb-3">
+            {providerType === 'clinica' ? 'Clínicas' : 'Petshops'} na sua região
+          </h1>
+          <p className="text-muted max-w-xl mx-auto">
+            {serviceLabels[service as ServiceType]} · {city} — {partners.length} parceiro{partners.length !== 1 ? 's' : ''} encontrado{partners.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {partners.map((p) => <CardPartner key={p.id} partner={p} />)}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Resultado: petsitter (com score) ─────────────────────────────────────
 
   if (!matches || matches.length === 0) {
     return (
@@ -181,16 +262,12 @@ export function MatchResults() {
 
   const [topMatch, ...restMatches] = matches
 
-  // ── Resumo do filtro aplicado ─────────────────────────────────────────────
-
   const summaryParts: string[] = []
   if (service)      summaryParts.push(serviceLabels[service as ServiceType] || service)
   if (city)         summaryParts.push(city)
   if (neighborhood) summaryParts.push(`bairro ${neighborhood}`)
   if (date)         summaryParts.push(new Date(date + 'T12:00:00').toLocaleDateString('pt-BR'))
   if (startTime)    summaryParts.push(`às ${startTime}`)
-
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
