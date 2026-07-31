@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   MapPin, Star, Clock, Shield, ChevronLeft, Calendar, MessageCircle,
   Navigation, Home, Footprints, GraduationCap, Bath, DoorOpen, Users, Images,
+  Stethoscope, Syringe, TestTube, Zap, AlertCircle, Package, Pill,
 } from 'lucide-react'
 import { petsitterService } from '@/services/petsitter.service'
 import { reviewService }    from '@/services/review.service'
@@ -17,12 +18,19 @@ import clsx from 'clsx'
 import type { ServiceType, Review } from '@/types'
 
 const SERVICE_ICONS: Record<ServiceType, React.ReactNode> = {
-  hospedagem:   <Home size={20} />,
-  passeio:      <Footprints size={20} />,
-  adestramento: <GraduationCap size={20} />,
-  banho_e_tosa: <Bath size={20} />,
-  visita:       <DoorOpen size={20} />,
-  creche:       <Users size={20} />,
+  hospedagem:            <Home size={20} />,
+  passeio:               <Footprints size={20} />,
+  adestramento:          <GraduationCap size={20} />,
+  banho_e_tosa:          <Bath size={20} />,
+  visita:                <DoorOpen size={20} />,
+  creche:                <Users size={20} />,
+  consulta_veterinaria:  <Stethoscope size={20} />,
+  vacinacao:             <Syringe size={20} />,
+  exames:                <TestTube size={20} />,
+  cirurgia:              <Zap size={20} />,
+  internacao:            <AlertCircle size={20} />,
+  venda_produtos:        <Package size={20} />,
+  farmacia_veterinaria:  <Pill size={20} />,
 }
 
 const REVIEWS_PREVIEW_COUNT = 3

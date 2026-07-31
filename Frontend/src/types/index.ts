@@ -50,6 +50,13 @@ export type ServiceType =
   | 'banho_e_tosa'
   | 'visita'
   | 'creche'
+  | 'consulta_veterinaria'
+  | 'vacinacao'
+  | 'exames'
+  | 'cirurgia'
+  | 'internacao'
+  | 'venda_produtos'
+  | 'farmacia_veterinaria'
 
 export interface PetsitterProfile {
   id: string
@@ -110,12 +117,27 @@ export interface PartnerProfile {
   user: { name: string; email: string; isActive: boolean }
   type: PartnerType
   businessName: string
+  contactName?: string
   cnpj?: string
   address: string
   city: string
   state: string
   servicesOffered: ServiceType[]
+  photos: string[]
   createdAt: string
+}
+
+/** Shape retornado por `GET /partners/:id` (público) — sem email/cnpj/contactName/isActive. */
+export interface PublicPartnerProfile {
+  id: string
+  type: PartnerType
+  businessName: string
+  address: string
+  city: string
+  state: string
+  servicesOffered: ServiceType[]
+  photos: string[]
+  user: { name: string; avatarUrl?: string | null }
 }
 
 export interface CreatePartnerPayload {

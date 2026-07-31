@@ -1,5 +1,5 @@
-import api from '@/lib/axios'
-import type { PartnerProfile, CreatePartnerPayload, UpdatePartnerPayload, PartnerType } from '@/types'
+import api, { uploadFile } from '@/lib/axios'
+import type { PartnerProfile, PublicPartnerProfile, CreatePartnerPayload, UpdatePartnerPayload, PartnerType } from '@/types'
 
 interface PaginatedPartners {
   data: PartnerProfile[]
@@ -29,6 +29,23 @@ export const partnerService = {
 
   async updateMe(payload: UpdatePartnerPayload): Promise<PartnerProfile> {
     const { data } = await api.patch<PartnerProfile>('/partners/me', payload)
+    return data
+  },
+
+  async getById(id: string): Promise<PublicPartnerProfile> {
+    const { data } = await api.get<PublicPartnerProfile>(`/partners/${id}`)
+    return data
+  },
+
+  async addPhoto(file: File): Promise<{ photos: string[] }> {
+    const form = new FormData()
+    form.append('photo', file)
+    return uploadFile<{ photos: string[] }>('/partners/me/photos', form)
+  },
+
+  /** `index` é a posição da foto no array — mesma razão do `petsitterService.removePhoto`. */
+  async removePhoto(index: number): Promise<{ photos: string[] }> {
+    const { data } = await api.delete<{ photos: string[] }>(`/partners/me/photos/${index}`)
     return data
   },
 }

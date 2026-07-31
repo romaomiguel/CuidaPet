@@ -100,4 +100,18 @@ export const petsitterService = {
     const { data } = await api.get<{ url: string }>(`/petsitters/me/documents/${field}/url`)
     return data
   },
+
+  /** Adiciona uma foto à galeria (máx. 8) — retorna o array atualizado de signed URLs. */
+  async addPhoto(file: File): Promise<{ photos: string[] }> {
+    const form = new FormData()
+    form.append('photo', file)
+    return uploadFile<{ photos: string[] }>('/petsitters/me/photos', form)
+  },
+
+  /** `index` é a posição da foto no array (única forma estável de identificar qual remover,
+   * já que só temos as signed URLs, nunca os paths reais do Storage). */
+  async removePhoto(index: number): Promise<{ photos: string[] }> {
+    const { data } = await api.delete<{ photos: string[] }>(`/petsitters/me/photos/${index}`)
+    return data
+  },
 }

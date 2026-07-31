@@ -52,6 +52,24 @@ export const serviceLabels: Record<ServiceType, string> = {
   banho_e_tosa: 'Banho & Tosa',
   visita: 'Visita Domiciliar',
   creche: 'Creche',
+  consulta_veterinaria: 'Consulta Veterinária',
+  vacinacao: 'Vacinação',
+  exames: 'Exames',
+  cirurgia: 'Cirurgia',
+  internacao: 'Internação',
+  venda_produtos: 'Venda de Produtos',
+  farmacia_veterinaria: 'Farmácia Veterinária',
+}
+
+/** Serviços que fazem sentido pra um Petsitter escolher — exclui os B2B (Clínica/Petshop). */
+export const PETSITTER_SERVICES: ServiceType[] = [
+  'hospedagem', 'passeio', 'adestramento', 'banho_e_tosa', 'visita', 'creche',
+]
+
+/** Serviços selecionáveis por tipo de parceiro B2B, filtra o checklist do Admin/painel do parceiro. */
+export const PARTNER_SERVICES_BY_TYPE: Record<'clinica' | 'petshop', ServiceType[]> = {
+  clinica: ['consulta_veterinaria', 'vacinacao', 'exames', 'cirurgia', 'internacao'],
+  petshop: ['banho_e_tosa', 'venda_produtos', 'farmacia_veterinaria'],
 }
 
 export const speciesLabels: Record<string, string> = {
