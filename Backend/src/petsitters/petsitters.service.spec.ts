@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { PetsittersService } from './petsitters.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
@@ -124,5 +125,107 @@ describe('PetsittersService.findMatches — clima/infraestrutura', () => {
     } as any);
 
     expect(result.matchReasons.some((r: string) => r.includes('único'))).toBe(true);
+  });
+});
+
+describe('PetsittersService', () => {
+  let service: PetsittersService;
+  let prisma: {
+    petsitterProfile: { findUnique: jest.Mock; update: jest.Mock };
+  };
+  let storageService: {
+    createAvatarUrls: jest.Mock;
+    createAvatarUrl: jest.Mock;
+    deleteObject: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    prisma = {
+      petsitterProfile: { findUnique: jest.fn(), update: jest.fn() },
+    };
+    storageService = {
+      createAvatarUrls: jest.fn().mockResolvedValue(new Map()),
+      createAvatarUrl: jest.fn().mockResolvedValue(null),
+      deleteObject: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        PetsittersService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: StorageService, useValue: storageService },
+      ],
+    }).compile();
+
+    service = module.get(PetsittersService);
+  });
+
+  describe('addPhoto', () => {
+    it('throws BadRequestException when the profile already has 8 photos', async () => {
+      (prisma.petsitterProfile.findUnique as jest.Mock).mockResolvedValue({
+        photos: Array.from({ length: 8 }, (_, i) => `user-1/photos/${i}.jpg`),
+      });
+
+      await expect(service.addPhoto('user-1', 'user-1/photos/new.jpg')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('appends the new photo path and returns the updated array as signed URLs', async () => {
+      (prisma.petsitterProfile.findUnique as jest.Mock).mockResolvedValue({
+        photos: ['user-1/photos/a.jpg'],
+      });
+      (prisma.petsitterProfile.update as jest.Mock).mockResolvedValue({
+        photos: ['user-1/photos/a.jpg', 'user-1/photos/b.jpg'],
+      });
+      (storageService.createAvatarUrls as jest.Mock).mockResolvedValue(
+        new Map([
+          ['user-1/photos/a.jpg', 'https://signed/a.jpg'],
+          ['user-1/photos/b.jpg', 'https://signed/b.jpg'],
+        ]),
+      );
+
+      const result = await service.addPhoto('user-1', 'user-1/photos/b.jpg');
+
+      expect(prisma.petsitterProfile.update).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+        data: { photos: ['user-1/photos/a.jpg', 'user-1/photos/b.jpg'] },
+        select: { photos: true },
+      });
+      expect(result.photos).toEqual(['https://signed/a.jpg', 'https://signed/b.jpg']);
+    });
+  });
+
+  describe('removePhoto', () => {
+    it('throws BadRequestException when the index is out of range', async () => {
+      (prisma.petsitterProfile.findUnique as jest.Mock).mockResolvedValue({
+        photos: ['user-1/photos/a.jpg'],
+      });
+
+      await expect(service.removePhoto('user-1', 5)).rejects.toThrow(BadRequestException);
+      expect(storageService.deleteObject).not.toHaveBeenCalled();
+    });
+
+    it('deletes the photo at the given index from Storage and the array', async () => {
+      (prisma.petsitterProfile.findUnique as jest.Mock).mockResolvedValue({
+        photos: ['user-1/photos/a.jpg', 'user-1/photos/b.jpg'],
+      });
+      (prisma.petsitterProfile.update as jest.Mock).mockResolvedValue({
+        photos: ['user-1/photos/a.jpg'],
+      });
+      (storageService.createAvatarUrls as jest.Mock).mockResolvedValue(
+        new Map([['user-1/photos/a.jpg', 'https://signed/a.jpg']]),
+      );
+
+      const result = await service.removePhoto('user-1', 1);
+
+      expect(storageService.deleteObject).toHaveBeenCalledWith('user-1/photos/b.jpg');
+      expect(prisma.petsitterProfile.update).toHaveBeenCalledWith({
+        where: { userId: 'user-1' },
+        data: { photos: ['user-1/photos/a.jpg'] },
+        select: { photos: true },
+      });
+      expect(result.photos).toEqual(['https://signed/a.jpg']);
+    });
   });
 });

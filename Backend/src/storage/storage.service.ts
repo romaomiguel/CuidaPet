@@ -91,6 +91,16 @@ export class StorageService {
     }
   }
 
+  /** Remove um objeto do bucket. Usado ao apagar uma foto de galeria. */
+  async deleteObject(path: string): Promise<void> {
+    const { error } = await this.client.storage.from(BUCKET).remove([path]);
+
+    if (error) {
+      this.logger.error(`Falha ao remover '${path}' do Storage: ${error.message}`);
+      throw new InternalServerErrorException('Não foi possível remover o arquivo. Tente novamente.');
+    }
+  }
+
   /** Gera uma signed URL de vida curta para leitura de um objeto privado. */
   async createSignedUrl(
     path: string,

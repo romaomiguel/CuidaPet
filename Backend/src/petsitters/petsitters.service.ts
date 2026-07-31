@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -41,6 +42,15 @@ export class PetsittersService {
       ...profile,
       user: { ...profile.user, avatarUrl: profile.user.avatar ? urlMap.get(profile.user.avatar) ?? null : null },
     }));
+  }
+
+  /** Assina paths de `photos` em lote — mesma ideia de withAvatarUrl(s), mas pro array de galeria.
+   * Fotos cujo path não resolver (removidas do Storage por fora, URL expirada etc.) somem do
+   * array em vez de quebrar a resposta. */
+  private async withPhotoUrls<T extends { photos: string[] }>(profile: T): Promise<T> {
+    if (profile.photos.length === 0) return profile;
+    const urlMap = await this.storageService.createAvatarUrls(profile.photos, AVATAR_SIGNED_URL_TTL_SECONDS);
+    return { ...profile, photos: profile.photos.map((p) => urlMap.get(p)).filter((u): u is string => !!u) };
   }
 
   async create(userId: string, createPetsitterProfileDto: CreatePetsitterProfileDto) {
@@ -309,7 +319,7 @@ export class PetsittersService {
       throw new NotFoundException('Perfil de petsitter não encontrado.');
     }
 
-    return this.withAvatarUrl(profile);
+    return this.withPhotoUrls(await this.withAvatarUrl(profile));
   }
 
   /**
@@ -447,10 +457,10 @@ export class PetsittersService {
           },
         },
       });
-      return this.withAvatarUrl(created);
+      return this.withPhotoUrls(await this.withAvatarUrl(created));
     }
 
-    return this.withAvatarUrl(profile);
+    return this.withPhotoUrls(await this.withAvatarUrl(profile));
   }
 
   /**
@@ -606,5 +616,57 @@ export class PetsittersService {
       where: { id },
       data: { status },
     });
+  }
+
+  private static readonly MAX_PHOTOS = 8;
+
+  /** `path` já é o path real gravado no Storage pelo controller (que fez o upload antes de
+   * chamar este método) — devolve o array atualizado já como signed URLs. */
+  async addPhoto(userId: string, path: string) {
+    const profile = await this.prisma.petsitterProfile.findUnique({
+      where: { userId },
+      select: { photos: true },
+    });
+    if (!profile) {
+      throw new NotFoundException('Perfil de petsitter não encontrado.');
+    }
+    if (profile.photos.length >= PetsittersService.MAX_PHOTOS) {
+      throw new BadRequestException(
+        `Limite de ${PetsittersService.MAX_PHOTOS} fotos atingido. Remova uma foto antes de adicionar outra.`,
+      );
+    }
+
+    const updated = await this.prisma.petsitterProfile.update({
+      where: { userId },
+      data: { photos: [...profile.photos, path] },
+      select: { photos: true },
+    });
+    return this.withPhotoUrls(updated);
+  }
+
+  /** `index` é a posição no array — único identificador estável que o frontend tem, já que ele
+   * só vê signed URLs (nunca os paths reais). Resolve o path real internamente, apaga do Storage,
+   * e só então atualiza o array — devolve o array atualizado já como signed URLs. */
+  async removePhoto(userId: string, index: number) {
+    const profile = await this.prisma.petsitterProfile.findUnique({
+      where: { userId },
+      select: { photos: true },
+    });
+    if (!profile) {
+      throw new NotFoundException('Perfil de petsitter não encontrado.');
+    }
+    if (index < 0 || index >= profile.photos.length) {
+      throw new BadRequestException('Índice de foto inválido.');
+    }
+
+    const pathToRemove = profile.photos[index];
+    await this.storageService.deleteObject(pathToRemove);
+
+    const updated = await this.prisma.petsitterProfile.update({
+      where: { userId },
+      data: { photos: profile.photos.filter((_, i) => i !== index) },
+      select: { photos: true },
+    });
+    return this.withPhotoUrls(updated);
   }
 }
