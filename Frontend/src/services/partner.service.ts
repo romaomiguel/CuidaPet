@@ -1,5 +1,5 @@
 import api, { uploadFile } from '@/lib/axios'
-import type { PartnerProfile, PublicPartnerProfile, CreatePartnerPayload, UpdatePartnerPayload, PartnerType } from '@/types'
+import type { PartnerProfile, PublicPartnerProfile, CreatePartnerPayload, UpdatePartnerPayload, PartnerType, ServiceType } from '@/types'
 
 interface PaginatedPartners {
   data: PartnerProfile[]
@@ -46,6 +46,18 @@ export const partnerService = {
   /** `index` é a posição da foto no array — mesma razão do `petsitterService.removePhoto`. */
   async removePhoto(index: number): Promise<{ photos: string[] }> {
     const { data } = await api.delete<{ photos: string[] }>(`/partners/me/photos/${index}`)
+    return data
+  },
+
+  /** Listagem pública — usada pela SearchPage (aba Clínicas/Petshops) e pelo MatchResults. */
+  async list(filters: { type?: PartnerType; service?: ServiceType; city?: string; page?: number; limit?: number } = {}): Promise<{
+    data: PublicPartnerProfile[]
+    total: number
+    page: number
+    pageSize: number
+    totalPages: number
+  }> {
+    const { data } = await api.get('/partners', { params: filters })
     return data
   },
 }

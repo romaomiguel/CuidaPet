@@ -321,3 +321,12 @@ export interface ApiError {
   statusCode: number
   errors?: Record<string, string[]>
 }
+
+// ─── Service Suggestion ─────────────────────────────────────────────────────────
+export interface ServiceSuggestion {
+  id: string
+  description: string
+  status: 'pending' | 'reviewed'
+  createdAt: string
+  user: { name: string; email: string; role: string }
+}

@@ -1,5 +1,7 @@
 import type { BookingStatus, ServiceType } from '@/types'
 
+export type ProviderType = 'petsitter' | 'clinica' | 'petshop'
+
 function isSameCalendarDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
 }
@@ -71,6 +73,30 @@ export const PETSITTER_SERVICES: ServiceType[] = [
 export const PARTNER_SERVICES_BY_TYPE: Record<'clinica' | 'petshop', ServiceType[]> = {
   clinica: ['consulta_veterinaria', 'vacinacao', 'exames', 'cirurgia', 'internacao'],
   petshop: ['banho_e_tosa', 'venda_produtos', 'farmacia_veterinaria'],
+}
+
+/** Cards do Step 0 do MatchWizard e do toggle de tipo na busca manual. */
+export const PROVIDER_TYPE_OPTIONS: { type: ProviderType; label: string; emoji: string; desc: string }[] = [
+  { type: 'petsitter', label: 'Petsitter', emoji: '🐕', desc: 'Hospedagem, passeio e mais' },
+  { type: 'clinica',   label: 'Clínica',   emoji: '🏥', desc: 'Consultas, vacinas, exames' },
+  { type: 'petshop',   label: 'Petshop',   emoji: '🛍️', desc: 'Banho, tosa e produtos' },
+]
+
+/** Cards de serviço no estilo do MatchWizard (emoji, não ícone Lucide) — só os B2B, pra
+ * quando o tutor escolhe Clínica/Petshop no Step 0. */
+export const PARTNER_SERVICE_CARDS: Record<'clinica' | 'petshop', { type: ServiceType; emoji: string }[]> = {
+  clinica: [
+    { type: 'consulta_veterinaria', emoji: '🩺' },
+    { type: 'vacinacao',            emoji: '💉' },
+    { type: 'exames',               emoji: '🔬' },
+    { type: 'cirurgia',             emoji: '⚕️' },
+    { type: 'internacao',           emoji: '🛏️' },
+  ],
+  petshop: [
+    { type: 'banho_e_tosa',         emoji: '🛁' },
+    { type: 'venda_produtos',       emoji: '🛍️' },
+    { type: 'farmacia_veterinaria', emoji: '💊' },
+  ],
 }
 
 export const speciesLabels: Record<string, string> = {
