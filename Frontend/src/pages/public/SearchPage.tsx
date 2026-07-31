@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import clsx from 'clsx'
 import { Search, SlidersHorizontal, X, AlertCircle } from 'lucide-react'
 import { petsitterService } from '@/services/petsitter.service'
+import { partnerService }   from '@/services/partner.service'
 import { CardPetsitter }    from '@/components/petsitter/CardPetsitter'
+import { CardPartner }      from '@/components/partner/CardPartner'
 import { PetsitterFilters } from '@/components/petsitter/PetsitterFilters'
+import { PartnerFilters }   from '@/components/partner/PartnerFilters'
 import { SkeletonPetsitterCard } from '@/components/ui/Skeleton'
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete'
 import { useDisclosure }    from '@/hooks/useDisclosure'
-import type { PetsitterFilters as Filters, ServiceType } from '@/types'
+import type { PetsitterFilters as Filters, ServiceType, PartnerType } from '@/types'
 import { serviceLabels } from '@/utils'
 
 const SORT_OPTIONS = [
@@ -22,12 +26,19 @@ export function SearchPage() {
   const navigate = useNavigate()
   const mobileFilters = useDisclosure()
 
+  const [tab, setTab] = useState<'petsitter' | 'clinica' | 'petshop'>(
+    (searchParams.get('tab') as 'petsitter' | 'clinica' | 'petshop') || 'petsitter',
+  )
+
   // Init filters from URL
   const [filters, setFilters] = useState<Filters>({
     city:       searchParams.get('city')     ?? undefined,
     service:    (searchParams.get('service') as ServiceType) ?? undefined,
     minRating:  searchParams.get('minRating') ? Number(searchParams.get('minRating')) : undefined,
     maxPrice:   searchParams.get('maxPrice')  ? Number(searchParams.get('maxPrice'))  : undefined,
+  })
+  const [partnerFilters, setPartnerFilters] = useState<{ city?: string; service?: ServiceType }>({
+    city: searchParams.get('city') ?? undefined,
   })
   const [sort,   setSort]   = useState('rating')
   const [search, setSearch] = useState(searchParams.get('city') ?? '')
@@ -46,6 +57,14 @@ export function SearchPage() {
     queryKey: ['petsitters', filters],
     queryFn:  () => petsitterService.list(filters),
     staleTime: 5 * 60 * 1000,
+    enabled: tab === 'petsitter',
+  })
+
+  const { data: partnerData, isLoading: isLoadingPartners, isError: isErrorPartners } = useQuery({
+    queryKey: ['partners', tab, partnerFilters],
+    queryFn:  () => partnerService.list({ type: tab as PartnerType, ...partnerFilters }),
+    staleTime: 5 * 60 * 1000,
+    enabled: tab === 'clinica' || tab === 'petshop',
   })
 
   const { data: cities = [] } = useQuery({
@@ -55,10 +74,19 @@ export function SearchPage() {
   })
 
   const petsitters = data?.data ?? []
+  const partners = partnerData?.data ?? []
 
   const handleReset = () => {
     setFilters({})
+    setPartnerFilters({})
     setSearch('')
+  }
+
+  const handleTabChange = (next: 'petsitter' | 'clinica' | 'petshop') => {
+    setTab(next)
+    const p = new URLSearchParams(searchParams)
+    p.set('tab', next)
+    setSearchParams(p, { replace: true })
   }
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -93,7 +121,7 @@ export function SearchPage() {
               className="lg:hidden btn-outline px-4 py-2.5 relative"
             >
               <SlidersHorizontal size={16} />
-              {Object.values(filters).some(Boolean) && (
+              {(tab === 'petsitter' ? Object.values(filters) : Object.values(partnerFilters)).some(Boolean) && (
                 <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary-500" />
               )}
             </button>
@@ -110,17 +138,42 @@ export function SearchPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex gap-2 mb-6 bg-background p-1.5 rounded-pill w-fit shadow-sm">
+          {(['petsitter', 'clinica', 'petshop'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => handleTabChange(t)}
+              className={clsx(
+                'px-4 py-2 rounded-pill text-sm font-semibold transition-all',
+                tab === t ? 'bg-white text-primary-700 shadow-sm' : 'text-muted hover:text-primary-600',
+              )}
+            >
+              {t === 'petsitter' ? 'Cuidadores' : t === 'clinica' ? 'Clínicas' : 'Petshops'}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-8">
 
           {/* ── Sidebar filters — desktop ── */}
           <div className="hidden lg:block w-72 flex-shrink-0">
             <div className="card sticky top-36">
-              <PetsitterFilters
-                filters={filters}
-                onChange={setFilters}
-                onReset={handleReset}
-                resultCount={petsitters.length}
-              />
+              {tab === 'petsitter' ? (
+                <PetsitterFilters
+                  filters={filters}
+                  onChange={setFilters}
+                  onReset={handleReset}
+                  resultCount={petsitters.length}
+                />
+              ) : (
+                <PartnerFilters
+                  partnerType={tab as 'clinica' | 'petshop'}
+                  filters={partnerFilters}
+                  onChange={setPartnerFilters}
+                  onReset={handleReset}
+                  resultCount={partners.length}
+                />
+              )}
             </div>
           </div>
 
@@ -135,15 +188,29 @@ export function SearchPage() {
                     <X size={20} />
                   </button>
                 </div>
-                <PetsitterFilters
-                  filters={filters}
-                  onChange={setFilters}
-                  onReset={handleReset}
-                  resultCount={petsitters.length}
-                />
+                {tab === 'petsitter' ? (
+                  <PetsitterFilters
+                    filters={filters}
+                    onChange={setFilters}
+                    onReset={handleReset}
+                    resultCount={petsitters.length}
+                  />
+                ) : (
+                  <PartnerFilters
+                    partnerType={tab as 'clinica' | 'petshop'}
+                    filters={partnerFilters}
+                    onChange={setPartnerFilters}
+                    onReset={handleReset}
+                    resultCount={partners.length}
+                  />
+                )}
                 <div className="mt-6 pt-4 border-t border-stroke">
                   <button onClick={mobileFilters.close} className="btn-primary w-full py-3">
-                    Ver {petsitters.length} resultado{petsitters.length !== 1 ? 's' : ''}
+                    {tab === 'petsitter' ? (
+                      <>Ver {petsitters.length} resultado{petsitters.length !== 1 ? 's' : ''}</>
+                    ) : (
+                      <>Ver {partners.length} resultado{partners.length !== 1 ? 's' : ''}</>
+                    )}
                   </button>
                 </div>
               </div>
@@ -155,8 +222,14 @@ export function SearchPage() {
             {/* Sort + count */}
             <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <p className="text-muted text-sm">
-                {isLoading ? 'Buscando...' : (
-                  <><span className="font-semibold text-ink">{petsitters.length}</span> petsitter{petsitters.length !== 1 ? 's' : ''} encontrado{petsitters.length !== 1 ? 's' : ''}</>
+                {tab === 'petsitter' ? (
+                  isLoading ? 'Buscando...' : (
+                    <><span className="font-semibold text-ink">{petsitters.length}</span> petsitter{petsitters.length !== 1 ? 's' : ''} encontrado{petsitters.length !== 1 ? 's' : ''}</>
+                  )
+                ) : (
+                  isLoadingPartners ? 'Buscando...' : (
+                    <><span className="font-semibold text-ink">{partners.length}</span> parceiro{partners.length !== 1 ? 's' : ''} encontrado{partners.length !== 1 ? 's' : ''}</>
+                  )
                 )}
               </p>
               <select
@@ -171,71 +244,133 @@ export function SearchPage() {
             </div>
 
             {/* Active filter pills */}
-            {Object.entries(filters).some(([, v]) => v !== undefined) && (
-              <div className="flex flex-wrap gap-2 mb-5">
-                {filters.city && (
-                  <span className="badge badge-green gap-1">
-                    📍 {filters.city}
-                    <button onClick={() => setFilters(f => ({ ...f, city: undefined }))}><X size={11} /></button>
-                  </span>
-                )}
-                {filters.service && (
-                  <span className="badge badge-green gap-1">
-                    {serviceLabels[filters.service]}
-                    <button onClick={() => setFilters(f => ({ ...f, service: undefined }))}><X size={11} /></button>
-                  </span>
-                )}
-                {filters.maxPrice && (
-                  <span className="badge badge-green gap-1">
-                    até R$ {filters.maxPrice}/h
-                    <button onClick={() => setFilters(f => ({ ...f, maxPrice: undefined }))}><X size={11} /></button>
-                  </span>
-                )}
-                {filters.minRating && (
-                  <span className="badge badge-green gap-1">
-                    {filters.minRating}+ ⭐
-                    <button onClick={() => setFilters(f => ({ ...f, minRating: undefined }))}><X size={11} /></button>
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Loading */}
-            {isLoading && (
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {Array.from({ length: 6 }, (_, i) => <SkeletonPetsitterCard key={i} />)}
-              </div>
-            )}
-
-            {/* Error */}
-            {isError && !isLoading && (
-              <div className="card flex flex-col items-center justify-center py-20 text-center">
-                <AlertCircle size={40} className="text-stroke mb-4" />
-                <h3 className="font-heading font-semibold text-ink mb-1">Erro ao carregar petsitters</h3>
-                <p className="text-sm text-muted">Verifique se a API está rodando em localhost:3000</p>
-              </div>
-            )}
-
-            {/* Empty */}
-            {!isLoading && !isError && petsitters.length === 0 && (
-              <div className="card flex flex-col items-center justify-center py-20 text-center">
-                <div className="text-5xl mb-4">🐾</div>
-                <h3 className="font-heading font-semibold text-ink mb-1">Nenhum petsitter encontrado</h3>
-                <p className="text-sm text-muted mb-6">Tente ajustar os filtros ou buscar em outra cidade</p>
-                <div className="flex gap-3">
-                  <button onClick={handleReset} className="btn-outline">Limpar filtros</button>
-                  <button onClick={() => navigate('/match')} className="btn-primary">✨ Usar Match</button>
+            {tab === 'petsitter' ? (
+              Object.entries(filters).some(([, v]) => v !== undefined) && (
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {filters.city && (
+                    <span className="badge badge-green gap-1">
+                      📍 {filters.city}
+                      <button onClick={() => setFilters(f => ({ ...f, city: undefined }))}><X size={11} /></button>
+                    </span>
+                  )}
+                  {filters.service && (
+                    <span className="badge badge-green gap-1">
+                      {serviceLabels[filters.service]}
+                      <button onClick={() => setFilters(f => ({ ...f, service: undefined }))}><X size={11} /></button>
+                    </span>
+                  )}
+                  {filters.maxPrice && (
+                    <span className="badge badge-green gap-1">
+                      até R$ {filters.maxPrice}/h
+                      <button onClick={() => setFilters(f => ({ ...f, maxPrice: undefined }))}><X size={11} /></button>
+                    </span>
+                  )}
+                  {filters.minRating && (
+                    <span className="badge badge-green gap-1">
+                      {filters.minRating}+ ⭐
+                      <button onClick={() => setFilters(f => ({ ...f, minRating: undefined }))}><X size={11} /></button>
+                    </span>
+                  )}
                 </div>
-              </div>
+              )
+            ) : (
+              Object.entries(partnerFilters).some(([, v]) => v !== undefined) && (
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {partnerFilters.city && (
+                    <span className="badge badge-green gap-1">
+                      📍 {partnerFilters.city}
+                      <button onClick={() => setPartnerFilters(f => ({ ...f, city: undefined }))}><X size={11} /></button>
+                    </span>
+                  )}
+                  {partnerFilters.service && (
+                    <span className="badge badge-green gap-1">
+                      {serviceLabels[partnerFilters.service]}
+                      <button onClick={() => setPartnerFilters(f => ({ ...f, service: undefined }))}><X size={11} /></button>
+                    </span>
+                  )}
+                </div>
+              )
             )}
 
-            {/* Grid */}
-            {!isLoading && !isError && petsitters.length > 0 && (
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {petsitters.map(ps => (
-                  <CardPetsitter key={ps.id} petsitter={ps} />
-                ))}
-              </div>
+            {tab === 'petsitter' ? (
+              <>
+                {/* Loading */}
+                {isLoading && (
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }, (_, i) => <SkeletonPetsitterCard key={i} />)}
+                  </div>
+                )}
+
+                {/* Error */}
+                {isError && !isLoading && (
+                  <div className="card flex flex-col items-center justify-center py-20 text-center">
+                    <AlertCircle size={40} className="text-stroke mb-4" />
+                    <h3 className="font-heading font-semibold text-ink mb-1">Erro ao carregar petsitters</h3>
+                    <p className="text-sm text-muted">Verifique se a API está rodando em localhost:3000</p>
+                  </div>
+                )}
+
+                {/* Empty */}
+                {!isLoading && !isError && petsitters.length === 0 && (
+                  <div className="card flex flex-col items-center justify-center py-20 text-center">
+                    <div className="text-5xl mb-4">🐾</div>
+                    <h3 className="font-heading font-semibold text-ink mb-1">Nenhum petsitter encontrado</h3>
+                    <p className="text-sm text-muted mb-6">Tente ajustar os filtros ou buscar em outra cidade</p>
+                    <div className="flex gap-3">
+                      <button onClick={handleReset} className="btn-outline">Limpar filtros</button>
+                      <button onClick={() => navigate('/match')} className="btn-primary">✨ Usar Match</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Grid */}
+                {!isLoading && !isError && petsitters.length > 0 && (
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {petsitters.map(ps => (
+                      <CardPetsitter key={ps.id} petsitter={ps} />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Loading */}
+                {isLoadingPartners && (
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {Array.from({ length: 6 }, (_, i) => <SkeletonPetsitterCard key={i} />)}
+                  </div>
+                )}
+
+                {/* Error */}
+                {isErrorPartners && !isLoadingPartners && (
+                  <div className="card flex flex-col items-center justify-center py-20 text-center">
+                    <AlertCircle size={40} className="text-stroke mb-4" />
+                    <h3 className="font-heading font-semibold text-ink mb-1">Erro ao carregar parceiros</h3>
+                    <p className="text-sm text-muted">Verifique se a API está rodando em localhost:3000</p>
+                  </div>
+                )}
+
+                {/* Empty */}
+                {!isLoadingPartners && !isErrorPartners && partners.length === 0 && (
+                  <div className="card flex flex-col items-center justify-center py-20 text-center">
+                    <div className="text-5xl mb-4">🏪</div>
+                    <h3 className="font-heading font-semibold text-ink mb-1">
+                      Nenhum{tab === 'clinica' ? 'a clínica encontrada' : ' petshop encontrado'}
+                    </h3>
+                    <p className="text-sm text-muted mb-6">Tente ajustar os filtros ou buscar em outra cidade</p>
+                    <button onClick={handleReset} className="btn-outline">Limpar filtros</button>
+                  </div>
+                )}
+
+                {/* Grid */}
+                {!isLoadingPartners && !isErrorPartners && partners.length > 0 && (
+                  <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {partners.map(p => (
+                      <CardPartner key={p.id} partner={p} />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
