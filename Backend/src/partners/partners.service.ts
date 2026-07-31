@@ -1,13 +1,34 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PartnerType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService, AVATAR_SIGNED_URL_TTL_SECONDS } from '../storage/storage.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
 
 @Injectable()
 export class PartnersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: StorageService,
+  ) {}
+
+  /** Assina paths de `photos` em lote — mesma ideia de withAvatarUrl, mas pro array de galeria.
+   * Fotos cujo path não resolver somem do array em vez de quebrar a resposta. */
+  private async withPhotoUrls<T extends { photos: string[] }>(profile: T): Promise<T> {
+    if (profile.photos.length === 0) return profile;
+    const urlMap = await this.storageService.createAvatarUrls(profile.photos, AVATAR_SIGNED_URL_TTL_SECONDS);
+    return { ...profile, photos: profile.photos.map((p) => urlMap.get(p)).filter((u): u is string => !!u) };
+  }
+
+  /** Mesmo padrão de `withAvatarUrl` em `petsitters.service.ts` — mantém `avatar` (path cru) no
+   * objeto e adiciona `avatarUrl` ao lado, o frontend só consome o segundo. */
+  private async withAvatarUrl<T extends { user: { avatar: string | null } }>(
+    profile: T,
+  ): Promise<T & { user: T['user'] & { avatarUrl: string | null } }> {
+    const avatarUrl = await this.storageService.createAvatarUrl(profile.user.avatar, AVATAR_SIGNED_URL_TTL_SECONDS);
+    return { ...profile, user: { ...profile.user, avatarUrl } };
+  }
 
   async create(dto: CreatePartnerDto) {
     const existingEmail = await this.prisma.user.findUnique({ where: { email: dto.email } });
@@ -26,7 +47,9 @@ export class PartnersService {
 
     const user = await this.prisma.user.create({
       data: {
-        name: dto.name,
+        // O nome de exibição em toda a plataforma (Navbar, Sidebar, página pública) é o
+        // nome fantasia, não o nome do contato — dto.name vira só contactName, informativo.
+        name: dto.businessName,
         email: dto.email,
         password: hashedPassword,
         role: 'partner',
@@ -34,6 +57,7 @@ export class PartnersService {
           create: {
             type: dto.type,
             businessName: dto.businessName,
+            contactName: dto.name,
             cnpj: dto.cnpj,
             address: dto.address,
             city: dto.city,
@@ -84,11 +108,11 @@ export class PartnersService {
       throw new NotFoundException('Perfil de parceiro não encontrado.');
     }
 
-    return profile;
+    return this.withPhotoUrls(profile);
   }
 
   async update(userId: string, dto: UpdatePartnerDto) {
-    return this.prisma.partnerProfile.update({
+    const updated = await this.prisma.partnerProfile.update({
       where: { userId },
       data: {
         businessName: dto.businessName,
@@ -107,5 +131,85 @@ export class PartnersService {
         },
       },
     });
+    return this.withPhotoUrls(updated);
+  }
+
+  private static readonly MAX_PHOTOS = 8;
+
+  /** `path` já é o path real gravado no Storage pelo controller — devolve o array atualizado
+   * já como signed URLs. */
+  async addPhoto(userId: string, path: string) {
+    const profile = await this.prisma.partnerProfile.findUnique({
+      where: { userId },
+      select: { photos: true },
+    });
+    if (!profile) {
+      throw new NotFoundException('Perfil de parceiro não encontrado.');
+    }
+    if (profile.photos.length >= PartnersService.MAX_PHOTOS) {
+      throw new BadRequestException(
+        `Limite de ${PartnersService.MAX_PHOTOS} fotos atingido. Remova uma foto antes de adicionar outra.`,
+      );
+    }
+
+    const updated = await this.prisma.partnerProfile.update({
+      where: { userId },
+      data: { photos: [...profile.photos, path] },
+      select: { photos: true },
+    });
+    return this.withPhotoUrls(updated);
+  }
+
+  /** `index` é a posição no array — único identificador estável que o frontend tem, já que ele
+   * só vê signed URLs. Resolve o path real internamente, apaga do Storage, só então atualiza o
+   * array — devolve o array atualizado já como signed URLs. */
+  async removePhoto(userId: string, index: number) {
+    const profile = await this.prisma.partnerProfile.findUnique({
+      where: { userId },
+      select: { photos: true },
+    });
+    if (!profile) {
+      throw new NotFoundException('Perfil de parceiro não encontrado.');
+    }
+    if (index < 0 || index >= profile.photos.length) {
+      throw new BadRequestException('Índice de foto inválido.');
+    }
+
+    const pathToRemove = profile.photos[index];
+    await this.storageService.deleteObject(pathToRemove);
+
+    const updated = await this.prisma.partnerProfile.update({
+      where: { userId },
+      data: { photos: profile.photos.filter((_, i) => i !== index) },
+      select: { photos: true },
+    });
+    return this.withPhotoUrls(updated);
+  }
+
+  /**
+   * Shape PÚBLICO — rota sem guard, acessível por qualquer request anônimo. Nunca inclui
+   * email/cnpj/contactName/isActive, só o necessário pra exibição de uma página de parceiro.
+   */
+  async findOne(id: string) {
+    const profile = await this.prisma.partnerProfile.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        type: true,
+        businessName: true,
+        address: true,
+        city: true,
+        state: true,
+        servicesOffered: true,
+        photos: true,
+        user: { select: { name: true, avatar: true } },
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Parceiro não encontrado.');
+    }
+
+    return this.withPhotoUrls(await this.withAvatarUrl(profile));
   }
 }
