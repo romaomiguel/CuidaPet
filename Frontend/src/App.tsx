@@ -21,6 +21,7 @@ import { PetsitterAccountPage }    from '@/pages/petsitter/PetsitterAccountPage'
 import { AdminDashboardPage }      from '@/pages/admin/AdminDashboardPage'
 import { AdminUsersPage }          from '@/pages/admin/AdminUsersPage'
 import { AdminPetsittersPage }     from '@/pages/admin/AdminPetsittersPage'
+import { AdminPartnersPage }        from '@/pages/admin/AdminPartnersPage'
 import { AdminSupportMessagesPage } from '@/pages/admin/AdminSupportMessagesPage'
 import { DashboardLayout }         from '@/layouts/DashboardLayout'
 
@@ -93,6 +94,7 @@ export default function App() {
         <Route index element={<AdminDashboardPage />} />
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="petsitters" element={<AdminPetsittersPage />} />
+        <Route path="partners"   element={<AdminPartnersPage />} />
         <Route path="suporte" element={<AdminSupportMessagesPage />} />
       </Route>
 
