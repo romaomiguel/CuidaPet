@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Body,
   Patch,
   Param,
@@ -11,6 +12,7 @@ import {
   UploadedFile,
   BadRequestException,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { PetsittersService } from './petsitters.service';
@@ -34,7 +36,7 @@ import {
   DOCUMENT_ALLOWED_EXTS,
   DOCUMENT_SIGNED_URL_TTL_SECONDS,
 } from '../storage/storage.service';
-import { documentMulterOptions } from '../storage/multer-options';
+import { documentMulterOptions, avatarMulterOptions } from '../storage/multer-options';
 
 type DocumentRouteField = 'identity-proof' | 'address-proof';
 type DocumentDbField = 'identityProof' | 'addressProof';
@@ -188,6 +190,42 @@ export class PetsittersController {
     @CurrentUser() user: { id: string },
   ) {
     return this.uploadDocument(file, user.id, 'addressProof');
+  }
+
+  @Post('me/photos')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('petsitter')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('photo', avatarMulterOptions))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Adicionar uma foto à galeria do petsitter logado (máx. 8)' })
+  @ApiResponse({ status: 201, description: 'Foto adicionada.' })
+  @ApiResponse({ status: 400, description: 'Limite de fotos atingido ou arquivo inválido.' })
+  async addPhoto(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: { id: string },
+  ) {
+    if (!file) {
+      throw new BadRequestException('Nenhum arquivo enviado.');
+    }
+    const detected = await this.storageService.validateFileSignature(file.buffer, DOCUMENT_ALLOWED_EXTS);
+    const path = `${user.id}/photos/${crypto.randomUUID()}.${detected.ext}`;
+    await this.storageService.uploadObject(path, file.buffer, detected.mime);
+    return this.petsittersService.addPhoto(user.id, path);
+  }
+
+  @Delete('me/photos/:index')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('petsitter')
+  @ApiOperation({ summary: 'Remover, pela posição no array, uma foto da galeria do petsitter logado' })
+  @ApiResponse({ status: 400, description: 'Índice de foto inválido.' })
+  removePhoto(
+    @Param('index') index: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.petsittersService.removePhoto(user.id, Number(index));
   }
 
   @Get('me/documents/:field/url')
