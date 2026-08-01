@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { MapPin, Star, Clock } from 'lucide-react'
 import clsx from 'clsx'
 import type { PetsitterProfile } from '@/types'
-import { formatCurrency, serviceLabels, avatarUrl } from '@/utils'
+import { formatCurrency, avatarUrl } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 
 interface CardPetsitterProps {
   petsitter: PetsitterProfile
@@ -11,6 +12,7 @@ interface CardPetsitterProps {
 
 export function CardPetsitter({ petsitter, className }: CardPetsitterProps) {
   const { id, user, location, city, state, rating, totalReviews, pricePerHour, services, isAvailable, pricingConfig } = petsitter
+  const catalog = useServiceCatalog()
 
   const prices = Object.values(pricingConfig || {}).map(p => p.price);
   const minPrice = prices.length > 0 ? Math.min(...prices) : pricePerHour;
@@ -92,7 +94,7 @@ export function CardPetsitter({ petsitter, className }: CardPetsitterProps) {
         <div className="flex flex-wrap gap-1.5">
           {services.slice(0, 3).map(s => (
             <span key={s} className="badge badge-green text-xs">
-              {serviceLabels[s]}
+              {catalog.label(s)}
             </span>
           ))}
           {services.length > 3 && (

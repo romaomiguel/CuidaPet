@@ -2,7 +2,8 @@ import { Link } from 'react-router-dom'
 import { MapPin } from 'lucide-react'
 import clsx from 'clsx'
 import type { PublicPartnerProfile } from '@/types'
-import { serviceLabels, avatarUrl } from '@/utils'
+import { avatarUrl } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 
 interface CardPartnerProps {
   partner: PublicPartnerProfile
@@ -11,6 +12,7 @@ interface CardPartnerProps {
 
 export function CardPartner({ partner, className }: CardPartnerProps) {
   const { id, type, businessName, address, city, state, servicesOffered, user } = partner
+  const catalog = useServiceCatalog()
 
   return (
     <Link
@@ -49,7 +51,7 @@ export function CardPartner({ partner, className }: CardPartnerProps) {
         <div className="flex flex-wrap gap-1.5">
           {servicesOffered.slice(0, 3).map((s) => (
             <span key={s} className="badge badge-green text-xs">
-              {serviceLabels[s]}
+              {catalog.label(s)}
             </span>
           ))}
           {servicesOffered.length > 3 && (

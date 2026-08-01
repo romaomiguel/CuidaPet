@@ -4,7 +4,8 @@ import { petsitterService } from '@/services/petsitter.service'
 import { partnerService } from '@/services/partner.service'
 import type { MatchResult } from '@/services/petsitter.service'
 import { MapPin, ArrowLeft, Sparkles } from 'lucide-react'
-import { avatarUrl, serviceLabels } from '@/utils'
+import { avatarUrl } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import type { ServiceType, PartnerType } from '@/types'
 import { CardPartner } from '@/components/partner/CardPartner'
 import clsx from 'clsx'
@@ -117,6 +118,7 @@ function MatchRow({ ps }: { ps: MatchResult }) {
 export function MatchResults() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const catalog = useServiceCatalog()
 
   const providerType = (searchParams.get('providerType') || 'petsitter') as 'petsitter' | 'clinica' | 'petshop'
   const isPartnerFlow = providerType === 'clinica' || providerType === 'petshop'
@@ -226,7 +228,7 @@ export function MatchResults() {
             {providerType === 'clinica' ? 'Clínicas' : 'Petshops'} na sua região
           </h1>
           <p className="text-muted max-w-xl mx-auto">
-            {serviceLabels[service as ServiceType]} · {city} — {partners.length} parceiro{partners.length !== 1 ? 's' : ''} encontrado{partners.length !== 1 ? 's' : ''}
+            {catalog.label(service)} · {city} — {partners.length} parceiro{partners.length !== 1 ? 's' : ''} encontrado{partners.length !== 1 ? 's' : ''}
           </p>
         </div>
 
@@ -263,7 +265,7 @@ export function MatchResults() {
   const [topMatch, ...restMatches] = matches
 
   const summaryParts: string[] = []
-  if (service)      summaryParts.push(serviceLabels[service as ServiceType] || service)
+  if (service)      summaryParts.push(catalog.label(service))
   if (city)         summaryParts.push(city)
   if (neighborhood) summaryParts.push(`bairro ${neighborhood}`)
   if (date)         summaryParts.push(new Date(date + 'T12:00:00').toLocaleDateString('pt-BR'))
