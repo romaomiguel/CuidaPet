@@ -43,20 +43,9 @@ export interface AuthResponse {
 }
 
 // ─── Petsitter ────────────────────────────────────────────────────────────────
-export type ServiceType =
-  | 'hospedagem'
-  | 'passeio'
-  | 'adestramento'
-  | 'banho_e_tosa'
-  | 'visita'
-  | 'creche'
-  | 'consulta_veterinaria'
-  | 'vacinacao'
-  | 'exames'
-  | 'cirurgia'
-  | 'internacao'
-  | 'venda_produtos'
-  | 'farmacia_veterinaria'
+/** Slug de um serviço do catálogo dinâmico (tabela Service) — não é mais um enum fixo,
+ * a validação de "esse slug existe e está ativo" acontece no backend. */
+export type ServiceType = string
 
 export interface PetsitterProfile {
   id: string
@@ -320,6 +309,18 @@ export interface ApiError {
   message: string
   statusCode: number
   errors?: Record<string, string[]>
+}
+
+// ─── Service Catalog ────────────────────────────────────────────────────────────
+export interface Service {
+  id: string
+  slug: string
+  name: string
+  emoji: string
+  description: string
+  audience: 'petsitter' | 'clinica' | 'petshop'
+  isActive: boolean
+  createdAt: string
 }
 
 // ─── Service Suggestion ─────────────────────────────────────────────────────────
