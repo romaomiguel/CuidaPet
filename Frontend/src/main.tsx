@@ -7,6 +7,7 @@ import { Toaster } from 'react-hot-toast'
 
 import App from './App'
 import { authService }  from './services/auth.service'
+import { serviceCatalogService } from './services/serviceCatalog.service'
 import { useAuthStore } from './store/auth.store'
 import './index.css'
 
@@ -45,6 +46,16 @@ const queryClient = new QueryClient({
     },
     mutations: { retry: 0 },
   },
+})
+
+// ─── Pré-aquecimento do cache ──────────────────────────────────────────────────
+// Aquece o cache do catálogo de serviços o quanto antes — evita que o primeiro
+// componente que precisar de um nome de serviço (ex: CardPetsitter na LandingPage,
+// a página de maior tráfego) veja um flash do slug bruto (ex: "passeio_noturno")
+// enquanto a busca ainda está em andamento.
+queryClient.prefetchQuery({
+  queryKey: ['service-catalog'],
+  queryFn: () => serviceCatalogService.list(),
 })
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
