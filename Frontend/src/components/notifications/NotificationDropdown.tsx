@@ -5,7 +5,8 @@ import { Bell, MessageCircle, CalendarClock, BellOff } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { bookingService } from '@/services/booking.service'
 import { chatService }    from '@/services/chat.service'
-import { avatarUrl, serviceLabels, formatConversationTime } from '@/utils'
+import { avatarUrl, formatConversationTime } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import clsx from 'clsx'
 
 type NotificationItem = {
@@ -21,6 +22,7 @@ type NotificationItem = {
 export function NotificationDropdown() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
+  const catalog = useServiceCatalog()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -68,7 +70,7 @@ export function NotificationDropdown() {
           icon: <CalendarClock size={13} className="text-amber-500" />,
           avatar: avatarUrl(b.tutor?.name ?? 'T', b.tutor?.avatarUrl ?? undefined),
           title: b.tutor?.name ?? 'Novo tutor',
-          subtitle: `Nova solicitação de ${serviceLabels[b.service]}`,
+          subtitle: `Nova solicitação de ${catalog.label(b.service)}`,
           time: b.createdAt,
           to: '/dashboard/petsitter?tab=pendentes',
         }))

@@ -1,5 +1,6 @@
 import clsx from 'clsx'
-import { avatarUrl, formatConversationTime, serviceLabels } from '@/utils'
+import { avatarUrl, formatConversationTime } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import type { ChatConversation } from '@/types'
 
 interface ConversationListItemProps {
@@ -9,6 +10,7 @@ interface ConversationListItemProps {
 }
 
 export function ConversationListItem({ conversation, active, onClick }: ConversationListItemProps) {
+  const catalog = useServiceCatalog()
   const { otherUser, service, lastMessage, unreadCount, updatedAt, status } = conversation
   const hasUnread = unreadCount > 0
   const isClosed = status === 'cancelled' || status === 'declined'
@@ -31,7 +33,7 @@ export function ConversationListItem({ conversation, active, onClick }: Conversa
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-ink truncate">
-            {serviceLabels[service]} — {otherUser.name}
+            {catalog.label(service)} — {otherUser.name}
           </p>
           <span className="text-[11px] text-muted flex-shrink-0">{formatConversationTime(updatedAt)}</span>
         </div>

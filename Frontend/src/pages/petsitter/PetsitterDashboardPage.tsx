@@ -5,7 +5,8 @@ import { bookingService } from '@/services/booking.service'
 import { petsitterService } from '@/services/petsitter.service'
 import { locationService } from '@/services/location.service'
 import { SkeletonList } from '@/components/ui/Skeleton'
-import { formatCurrency, bookingStatusConfig, serviceLabels, avatarUrl } from '@/utils'
+import { formatCurrency, bookingStatusConfig, avatarUrl } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import {
   Star, CheckCheck, AlertTriangle, Check, X, MapPin, ChevronDown, ToggleLeft, ToggleRight,
   Clock, User, FileText, CalendarDays, DollarSign, Lightbulb,
@@ -86,6 +87,7 @@ const HISTORY_FILTERS: { key: HistoryFilter; label: string }[] = [
 export function PetsitterDashboardPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
+  const catalog = useServiceCatalog()
 
   const requestedTab = searchParams.get('tab')
   const tab: Tab = requestedTab === 'em_progresso' || requestedTab === 'historico' ? requestedTab : 'pendentes'
@@ -250,7 +252,7 @@ export function PetsitterDashboardPage() {
                       </div>
                     </div>
                     <div className="bg-background rounded-2xl p-3 flex flex-col items-center sm:items-end min-w-[140px] flex-shrink-0">
-                      <span className="text-xs font-bold text-primary-600 uppercase tracking-wider mb-0.5">{serviceLabels[b.service]}</span>
+                      <span className="text-xs font-bold text-primary-600 uppercase tracking-wider mb-0.5">{catalog.label(b.service)}</span>
                       <span className="text-sm font-semibold text-ink">{bookingDateLabel(b)}</span>
                     </div>
                   </div>
@@ -307,7 +309,7 @@ export function PetsitterDashboardPage() {
                             {b.tutor?.name}
                             {active && <span className="badge badge-green flex-shrink-0">Em andamento</span>}
                           </h3>
-                          <p className="text-sm text-muted truncate">{b.pets?.[0]?.name || 'Pet'} · {serviceLabels[b.service]}</p>
+                          <p className="text-sm text-muted truncate">{b.pets?.[0]?.name || 'Pet'} · {catalog.label(b.service)}</p>
                         </div>
                       </div>
                       <div className="bg-background rounded-2xl p-3 flex flex-col items-center sm:items-end min-w-[140px] flex-shrink-0">
@@ -398,7 +400,7 @@ export function PetsitterDashboardPage() {
                             />
                             <div className="min-w-0">
                               <p className="font-semibold text-ink truncate">{b.tutor?.name}</p>
-                              <p className="text-xs text-muted truncate">{serviceLabels[b.service]} · {b.pets?.[0]?.name || 'Pet'}</p>
+                              <p className="text-xs text-muted truncate">{catalog.label(b.service)} · {b.pets?.[0]?.name || 'Pet'}</p>
                             </div>
                           </div>
 

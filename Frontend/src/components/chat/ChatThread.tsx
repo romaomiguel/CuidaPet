@@ -13,8 +13,8 @@ import {
   canSendChatMessage,
   formatDayDivider,
   formatMessageTime,
-  serviceLabels,
 } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import type { ChatConversation, ChatMessage } from '@/types'
 
 interface ChatThreadProps {
@@ -89,6 +89,7 @@ function MessageRow({ message, isOwn }: { message: ChatMessage; isOwn: boolean }
 export function ChatThread({ bookingId, conversation, onBack }: ChatThreadProps) {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
+  const catalog = useServiceCatalog()
   const [content, setContent] = useState('')
   const [trailOpen, setTrailOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -189,7 +190,7 @@ export function ChatThread({ bookingId, conversation, onBack }: ChatThreadProps)
             />
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-ink truncate text-sm">
-                {serviceLabels[conversation.service]} — {conversation.otherUser.name}
+                {catalog.label(conversation.service)} — {conversation.otherUser.name}
               </p>
               <span className={clsx('badge', bookingStatusConfig[conversation.status].badgeClass)}>
                 {bookingStatusConfig[conversation.status].label}

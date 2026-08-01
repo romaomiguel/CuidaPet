@@ -5,7 +5,8 @@ import { SkeletonList }   from '@/components/ui/Skeleton'
 import { RatingStars }    from '@/components/ui/RatingStars'
 import { ReviewModal }    from '@/components/booking/ReviewModal'
 import { LocationTrailMap } from '@/components/location/LocationTrailMap'
-import { formatCurrency, formatDateShort, bookingStatusConfig, serviceLabels, avatarUrl } from '@/utils'
+import { formatCurrency, formatDateShort, bookingStatusConfig, avatarUrl } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import { CalendarDays, AlertCircle, X, Star, MapPin, Navigation } from 'lucide-react'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -18,6 +19,7 @@ function isHappeningNow(booking: Booking): boolean {
 
 export function BookingsPage() {
   const queryClient = useQueryClient()
+  const catalog = useServiceCatalog()
   const [reviewTarget, setReviewTarget] = useState<Booking | null>(null)
   const [trailTarget, setTrailTarget] = useState<string | null>(null)
   const { data, isLoading, isError } = useQuery({
@@ -84,7 +86,7 @@ export function BookingsPage() {
                   />
                   <div>
                     <p className="font-semibold text-ink">{b.petsitter?.user?.name}</p>
-                    <p className="text-xs text-muted">{serviceLabels[b.service]}</p>
+                    <p className="text-xs text-muted">{catalog.label(b.service)}</p>
                   </div>
                 </div>
                 <span className={clsx('badge', cfg.badgeClass)}>{cfg.label}</span>
