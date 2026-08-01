@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { MapPin, LocateFixed, ArrowRight, ArrowLeft, Clock, CalendarDays, CheckCircle2, Wallet, Info, CheckCircle } from 'lucide-react'
-import { serviceLabels, PROVIDER_TYPE_OPTIONS, PARTNER_SERVICE_CARDS, type ProviderType } from '@/utils'
+import { PROVIDER_TYPE_OPTIONS, type ProviderType } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import { AmbientBlobs } from '@/components/ui/AmbientBlobs'
 import { StepProgress } from '@/components/ui/StepProgress'
 import { petService } from '@/services/pet.service'
@@ -13,18 +14,9 @@ import toast from 'react-hot-toast'
 
 // ── Constantes ─────────────────────────────────────────────────────────────────
 
-/** Shape comum dos cards de serviço do Step 1 — o fluxo Petsitter preenche desc/ring/bg,
- * o fluxo Parceiro (Clínica/Petshop) usa só type/emoji e cai nos estilos padrão abaixo. */
-type ServiceCard = { type: ServiceType; emoji: string; desc?: string; ring?: string; bg?: string }
-
-const SERVICES: ServiceCard[] = [
-  { type: 'hospedagem',   emoji: '🏠', desc: 'Cuidados dia e noite',   ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  { type: 'passeio',      emoji: '🦮', desc: 'Exercício diário',       ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
-  { type: 'creche',       emoji: '🎾', desc: 'Diversão de dia',        ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  { type: 'visita',       emoji: '🚪', desc: 'O cuidador vai até você', ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
-  { type: 'banho_e_tosa', emoji: '🛁', desc: 'Limpeza completa',       ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  { type: 'adestramento', emoji: '🎓', desc: 'Educação positiva',      ring: 'peer-checked:border-error-500',     bg: 'bg-error-50 text-error-600'         },
-]
+/** Shape dos cards de serviço do Step 1, montados a partir do catálogo dinâmico
+ * (useServiceCatalog) — todos os fluxos (Petsitter, Clínica, Petshop) usam a mesma forma. */
+type ServiceCard = { type: ServiceType; emoji: string; desc?: string }
 
 const SPECIES_OPTIONS = [
   { value: 'cachorro', label: 'Cachorro', icon: '🐕' },
@@ -63,23 +55,13 @@ function budgetTier(value: number) {
 const PETSITTER_STEP_LABELS = ['Serviço', 'Localização e Data', 'Detalhes do Pet', 'Orçamento']
 const PARTNER_STEP_LABELS   = ['Serviço', 'Localização e Data', 'Detalhes do Pet']
 
-// Estilo padrão aplicado aos cards de serviço do fluxo Parceiro (que só definem type/emoji)
+// Estilo padrão aplicado aos cards de serviço do Step 1 — o catálogo é dinâmico e
+// aberto (Admin pode cadastrar novos serviços), então não há como curar uma cor por
+// serviço; todos os cards usam o mesmo estilo. Ícone em círculo sólido (não em tom
+// pastel) por causa da Solid Icon Badge Rule do DESIGN.md — em círculos pequenos
+// (~56px) um par de tons pálidos "lava" o ícone mesmo passando no contraste.
 const PARTNER_CARD_RING = 'peer-checked:border-primary-500'
-const PARTNER_CARD_BG   = 'bg-primary-100 text-primary-700'
-
-// Enriquecimento visual (desc + cores) dos cards B2B — só apresentação, a fonte de
-// verdade (type/emoji) continua em PARTNER_SERVICE_CARDS (@/utils). Dá aos cards de
-// Clínica/Petshop a mesma riqueza visual (descrição + variação de cor) dos cards do Petsitter.
-const PARTNER_CARD_META: Partial<Record<ServiceType, { desc: string; ring: string; bg: string }>> = {
-  consulta_veterinaria: { desc: 'Diagnóstico e acompanhamento',  ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  vacinacao:            { desc: 'Imunização em dia',             ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
-  exames:                { desc: 'Laboratoriais e de imagem',    ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  cirurgia:              { desc: 'Procedimentos cirúrgicos',     ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  internacao:            { desc: 'Cuidado contínuo e monitorado', ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  banho_e_tosa:          { desc: 'Limpeza e estética completa',  ring: 'peer-checked:border-primary-500',   bg: 'bg-primary-100 text-primary-700'   },
-  venda_produtos:        { desc: 'Ração, acessórios e mais',     ring: 'peer-checked:border-secondary-500', bg: 'bg-secondary-100 text-secondary-700' },
-  farmacia_veterinaria:  { desc: 'Medicamentos e prescrições',   ring: 'peer-checked:border-error-500',     bg: 'bg-error-50 text-error-600'         },
-}
+const PARTNER_CARD_BG   = 'bg-primary-500 text-white'
 
 // ── Componente ──────────────────────────────────────────────────────────────────
 
@@ -115,6 +97,8 @@ export function MatchWizard() {
     enabled:  isAuthenticated,
   })
 
+  const catalog = useServiceCatalog()
+
   const isPartnerFlow = providerType === 'clinica' || providerType === 'petshop'
   const isDaily = DAILY_SERVICES.includes(service as ServiceType)
   const tier = budgetTier(Number(maxPrice) || 80)
@@ -122,10 +106,9 @@ export function MatchWizard() {
   const TOTAL_STEPS = isPartnerFlow ? 3 : 4
   const STEP_LABELS = isPartnerFlow ? PARTNER_STEP_LABELS : PETSITTER_STEP_LABELS
 
-  const partnerServiceCards: ServiceCard[] = isPartnerFlow
-    ? PARTNER_SERVICE_CARDS[providerType as 'clinica' | 'petshop'].map(card => ({ ...card, ...PARTNER_CARD_META[card.type] }))
+  const serviceCards: ServiceCard[] = providerType
+    ? catalog.byAudience(providerType).map(s => ({ type: s.slug, emoji: s.emoji, desc: s.description }))
     : []
-  const serviceCards: ServiceCard[] = isPartnerFlow ? partnerServiceCards : SERVICES
 
   const selectPet = (pet: (typeof savedPets)[number]) => {
     setSelectedPetId(pet.id)
@@ -228,32 +211,45 @@ export function MatchWizard() {
                   </h1>
                   <p className="text-muted">Selecione o serviço principal para encontrarmos a opção ideal.</p>
                 </div>
-                <div className="flex flex-wrap justify-center gap-4">
-                  {serviceCards.map(({ type, emoji, desc, ring, bg }) => (
-                    <label key={type} className="relative cursor-pointer group w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.6667rem)]">
-                      <input
-                        type="radio"
-                        name="service"
-                        checked={service === type}
-                        onChange={() => setService(type)}
-                        className="peer sr-only"
-                      />
-                      <div className={clsx(
-                        'h-full flex flex-col items-center justify-center p-4 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2',
-                        ring ?? PARTNER_CARD_RING,
-                      )}>
-                        <div className={clsx('w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2', bg ?? PARTNER_CARD_BG)} aria-hidden="true">
-                          {emoji}
+                {catalog.isLoading ? (
+                  <div className="flex flex-wrap justify-center gap-4" role="status" aria-busy="true" aria-live="polite">
+                    <span className="sr-only">Carregando serviços disponíveis…</span>
+                    {Array.from({ length: 6 }, (_, i) => (
+                      <div key={i} className="w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.6667rem)] h-28 rounded-2xl bg-background animate-pulse" />
+                    ))}
+                  </div>
+                ) : serviceCards.length === 0 ? (
+                  <p className="text-center text-sm text-muted">
+                    Nenhum serviço disponível para esse tipo de prestador no momento.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap justify-center gap-4">
+                    {serviceCards.map(({ type, emoji, desc }) => (
+                      <label key={type} className="relative cursor-pointer group w-[calc(50%-0.5rem)] sm:w-[calc(33.333%-0.6667rem)]">
+                        <input
+                          type="radio"
+                          name="service"
+                          checked={service === type}
+                          onChange={() => setService(type)}
+                          className="peer sr-only"
+                        />
+                        <div className={clsx(
+                          'h-full flex flex-col items-center justify-center p-4 rounded-2xl bg-white shadow-sm border-2 border-transparent transition-all duration-300 hover:-translate-y-1 hover:shadow-md peer-checked:bg-background peer-focus-visible:ring-2 peer-focus-visible:ring-primary-500 peer-focus-visible:ring-offset-2',
+                          PARTNER_CARD_RING,
+                        )}>
+                          <div className={clsx('w-14 h-14 rounded-full flex items-center justify-center text-2xl mb-2', PARTNER_CARD_BG)} aria-hidden="true">
+                            {emoji}
+                          </div>
+                          <span className="font-semibold text-sm text-ink text-center">{catalog.label(type)}</span>
+                          {desc && <span className="text-xs text-muted text-center mt-0.5">{desc}</span>}
                         </div>
-                        <span className="font-semibold text-sm text-ink text-center">{serviceLabels[type]}</span>
-                        {desc && <span className="text-xs text-muted text-center mt-0.5">{desc}</span>}
-                      </div>
-                      {service === type && (
-                        <CheckCircle2 size={20} className="absolute top-2 right-2 text-primary-600" fill="white" />
-                      )}
-                    </label>
-                  ))}
-                </div>
+                        {service === type && (
+                          <CheckCircle2 size={20} className="absolute top-2 right-2 text-primary-600" fill="white" />
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
