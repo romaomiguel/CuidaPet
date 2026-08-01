@@ -200,6 +200,52 @@ describe('PetsittersService', () => {
 
       expect(servicesService.assertValidSlugs).toHaveBeenCalledWith(['passeio'], 'petsitter');
     });
+
+    // Finding 1 (revisão final): um slug legado/aposentado/de outra audiência que já estava
+    // no perfil (ex.: banho_e_tosa recadastrado como petshop) nunca pode travar o salvamento
+    // do resto do perfil — só slugs NOVOS são validados contra o catálogo ativo.
+    it('update() only validates newly-added slugs, never ones already on the stored profile', async () => {
+      prisma.petsitterProfile.findUnique.mockResolvedValue(
+        basePetsitter({ id: 'ps-1', userId: 'user-1', services: ['banho_e_tosa', 'passeio'] }),
+      );
+      prisma.petsitterProfile.update.mockResolvedValue(
+        basePetsitter({ id: 'ps-1', userId: 'user-1', services: ['banho_e_tosa', 'passeio'] }),
+      );
+
+      // Re-submitting the exact same array (including the legacy invalid slug) must succeed.
+      await service.update('ps-1', 'user-1', { services: ['banho_e_tosa', 'passeio'] } as any);
+      expect(servicesService.assertValidSlugs).toHaveBeenCalledWith([], 'petsitter');
+
+      servicesService.assertValidSlugs.mockClear();
+
+      // Removing the legacy invalid slug must also succeed without validating it.
+      await service.update('ps-1', 'user-1', { services: ['passeio'] } as any);
+      expect(servicesService.assertValidSlugs).toHaveBeenCalledWith([], 'petsitter');
+    });
+
+    it('update() validates only the genuinely new slug when mixed with a pre-existing invalid one', async () => {
+      prisma.petsitterProfile.findUnique.mockResolvedValue(
+        basePetsitter({ id: 'ps-1', userId: 'user-1', services: ['banho_e_tosa'] }),
+      );
+      prisma.petsitterProfile.update.mockResolvedValue(
+        basePetsitter({ id: 'ps-1', userId: 'user-1', services: ['banho_e_tosa', 'creche'] }),
+      );
+
+      await service.update('ps-1', 'user-1', { services: ['banho_e_tosa', 'creche'] } as any);
+
+      expect(servicesService.assertValidSlugs).toHaveBeenCalledWith(['creche'], 'petsitter');
+    });
+
+    it('updateByUserId() only validates newly-added slugs against the existing profile', async () => {
+      prisma.petsitterProfile.findUnique.mockResolvedValue({ services: ['banho_e_tosa'] });
+      (prisma as any).petsitterProfile.upsert = jest.fn().mockResolvedValue(
+        basePetsitter({ userId: 'user-1', services: ['banho_e_tosa'] }),
+      );
+
+      await service.updateByUserId('user-1', { services: ['banho_e_tosa'] } as any);
+
+      expect(servicesService.assertValidSlugs).toHaveBeenCalledWith([], 'petsitter');
+    });
   });
 
   describe('addPhoto', () => {

@@ -89,6 +89,48 @@ describe('PartnersService', () => {
 
       expect(servicesServiceMock.assertValidSlugs).toHaveBeenCalledWith(['venda_produtos'], 'petshop');
     });
+
+    // Finding 1 (revisão final): um slug legado/aposentado que já estava em servicesOffered
+    // nunca pode travar o salvamento do resto do perfil — só slugs NOVOS são validados.
+    it('update() only validates newly-added slugs, never ones already on the stored profile', async () => {
+      prisma.partnerProfile.findUnique.mockResolvedValue({
+        type: 'petshop',
+        servicesOffered: ['banho_e_tosa', 'venda_produtos'],
+      });
+      prisma.partnerProfile.update.mockResolvedValue({
+        id: 'p-1', type: 'petshop', servicesOffered: ['banho_e_tosa', 'venda_produtos'], photos: [],
+        user: { name: 'x', email: 'x', isActive: true },
+      });
+
+      // Re-submitting the exact same array (including a legacy/wrong-audience slug) succeeds.
+      await service.update('user-1', { servicesOffered: ['banho_e_tosa', 'venda_produtos'] } as any);
+      expect(servicesServiceMock.assertValidSlugs).toHaveBeenCalledWith([], 'petshop');
+
+      servicesServiceMock.assertValidSlugs.mockClear();
+
+      // Removing the legacy invalid slug also succeeds without validating it.
+      prisma.partnerProfile.update.mockResolvedValue({
+        id: 'p-1', type: 'petshop', servicesOffered: ['venda_produtos'], photos: [],
+        user: { name: 'x', email: 'x', isActive: true },
+      });
+      await service.update('user-1', { servicesOffered: ['venda_produtos'] } as any);
+      expect(servicesServiceMock.assertValidSlugs).toHaveBeenCalledWith([], 'petshop');
+    });
+
+    it('update() validates only the genuinely new slug when mixed with a pre-existing invalid one', async () => {
+      prisma.partnerProfile.findUnique.mockResolvedValue({
+        type: 'petshop',
+        servicesOffered: ['banho_e_tosa'],
+      });
+      prisma.partnerProfile.update.mockResolvedValue({
+        id: 'p-1', type: 'petshop', servicesOffered: ['banho_e_tosa', 'venda_produtos'], photos: [],
+        user: { name: 'x', email: 'x', isActive: true },
+      });
+
+      await service.update('user-1', { servicesOffered: ['banho_e_tosa', 'venda_produtos'] } as any);
+
+      expect(servicesServiceMock.assertValidSlugs).toHaveBeenCalledWith(['venda_produtos'], 'petshop');
+    });
   });
 
   describe('create', () => {

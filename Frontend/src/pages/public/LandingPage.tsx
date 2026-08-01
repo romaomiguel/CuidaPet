@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowRight, ChevronRight, PlayCircle, Footprints, Home, Gamepad2, Droplets,
-  GraduationCap, MapPin, Search, Star, MessageCircle, Map as MapIcon, PawPrint, Plus,
+  ArrowRight, ChevronRight, PlayCircle,
+  MapPin, Search, Star, MessageCircle, Map as MapIcon, PawPrint, Plus,
 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { petsitterService } from '@/services/petsitter.service'
@@ -18,12 +18,16 @@ const MATCH_STEPS = [
   { n: 3, title: 'Escolha o cuidador ideal',             desc: 'Converse, avalie perfis e feche o serviço.',    accent: 'primary' as const },
 ]
 
-const SERVICES: { type: ServiceType; icon: ReactNode; title: string; desc: string; accent: 'primary' | 'secondary'; floatClassName: string }[] = [
-  { type: 'passeio',      icon: <Footprints size={20} />,     title: 'Passeio',       desc: 'Diversão e exercício diário.',        accent: 'primary' as const,   floatClassName: 'top-2 left-0 sm:left-10 -rotate-3' },
-  { type: 'hospedagem',   icon: <Home size={20} />,           title: 'Hospedagem',    desc: 'Cuidado no conforto do seu lar.',     accent: 'primary' as const,   floatClassName: 'top-2 right-0 sm:right-10 rotate-3' },
-  { type: 'creche',       icon: <Gamepad2 size={20} />,       title: 'Creche',        desc: 'Brincadeiras o dia todo.',            accent: 'secondary' as const, floatClassName: 'bottom-24 sm:bottom-10 left-0 sm:left-10 rotate-2' },
-  { type: 'banho_e_tosa', icon: <Droplets size={20} />,       title: 'Banho e Tosa',  desc: 'Higiene e cuidado com os pelos.',     accent: 'primary' as const,   floatClassName: 'bottom-24 sm:bottom-10 right-0 sm:right-10 -rotate-2' },
-  { type: 'adestramento', icon: <GraduationCap size={20} />,  title: 'Adestramento',  desc: 'Educação e bons modos.',              accent: 'secondary' as const, floatClassName: '-bottom-2 left-1/2 -translate-x-1/2' },
+// Estilo puramente visual (posição/cor dos cards flutuantes) — não representa nenhum
+// serviço específico, só dá variedade posicional aos N primeiros serviços do catálogo
+// vindos de useServiceCatalog(). O SET de serviços exibido/linkado vem sempre do catálogo
+// ao vivo (nunca hardcoded) — ver Finding 3 da revisão final.
+const SERVICE_SHOWCASE_STYLE: { accent: 'primary' | 'secondary'; floatClassName: string }[] = [
+  { accent: 'primary',   floatClassName: 'top-2 left-0 sm:left-10 -rotate-3' },
+  { accent: 'primary',   floatClassName: 'top-2 right-0 sm:right-10 rotate-3' },
+  { accent: 'secondary', floatClassName: 'bottom-24 sm:bottom-10 left-0 sm:left-10 rotate-2' },
+  { accent: 'primary',   floatClassName: 'bottom-24 sm:bottom-10 right-0 sm:right-10 -rotate-2' },
+  { accent: 'secondary', floatClassName: '-bottom-2 left-1/2 -translate-x-1/2' },
 ]
 
 const TRUST_POINTS = [
@@ -56,6 +60,13 @@ export function LandingPage() {
   const catalog = useServiceCatalog()
   const [city,    setCity]    = useState('')
   const [service, setService] = useState<ServiceType | ''>('')
+
+  // Fonte única para os chips de busca rápida e a seção "Nossos Serviços" — nunca uma
+  // lista hardcoded, senão um serviço aposentado continua sendo anunciado/linkado (ver
+  // Finding 3 da revisão final).
+  const petsitterServices = catalog.byAudience('petsitter')
+  const quickSearchServices = petsitterServices.slice(0, 4)
+  const showcaseServices = petsitterServices.slice(0, 5)
 
   const { data, isLoading } = useQuery({
     queryKey: ['petsitters', 'featured'],
@@ -137,13 +148,13 @@ export function LandingPage() {
                 </button>
               </form>
               <div className="flex flex-wrap items-center gap-1.5 text-xs mt-3">
-                {SERVICES.slice(0, 4).map(({ type, title }) => (
+                {quickSearchServices.map((s) => (
                   <button
-                    key={type}
-                    onClick={() => navigate(`/buscar?service=${type}`)}
+                    key={s.slug}
+                    onClick={() => navigate(`/buscar?service=${s.slug}`)}
                     className="px-2.5 py-1 rounded-pill bg-white/10 hover:bg-white/20 border border-white/20 transition-all text-white/80 font-medium"
                   >
-                    {title}
+                    {s.name}
                   </button>
                 ))}
               </div>
@@ -231,17 +242,20 @@ export function LandingPage() {
             />
           </div>
 
-          {SERVICES.map(({ type, icon, title, desc, accent, floatClassName }) => (
-            <FloatingServiceCard
-              key={type}
-              icon={icon}
-              title={title}
-              desc={desc}
-              accent={accent}
-              className={floatClassName}
-              onClick={() => navigate('/match')}
-            />
-          ))}
+          {showcaseServices.map((s, i) => {
+            const style = SERVICE_SHOWCASE_STYLE[i % SERVICE_SHOWCASE_STYLE.length]
+            return (
+              <FloatingServiceCard
+                key={s.slug}
+                icon={<span className="text-xl" aria-hidden="true">{s.emoji}</span>}
+                title={s.name}
+                desc={s.description}
+                accent={style.accent}
+                className={style.floatClassName}
+                onClick={() => navigate('/match')}
+              />
+            )
+          })}
 
           <FloatingServiceCard
             icon={<Plus size={20} />}
@@ -255,21 +269,24 @@ export function LandingPage() {
 
         {/* Mobile: lista simples no lugar dos cards flutuantes (que não cabem numa tela estreita) */}
         <div className="sm:hidden max-w-md mx-auto grid grid-cols-2 gap-3 mt-6">
-          {SERVICES.map(({ type, icon, title, desc, accent }) => (
-            <button
-              key={type}
-              onClick={() => navigate('/match')}
-              className="bg-white p-3.5 rounded-2xl shadow-card flex items-start gap-2.5 text-left"
-            >
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${accent === 'secondary' ? 'bg-secondary-100 text-secondary-700' : 'bg-primary-100 text-primary-700'}`}>
-                {icon}
-              </div>
-              <div className="min-w-0">
-                <h4 className="font-semibold text-ink text-sm leading-tight">{title}</h4>
-                <p className="text-xs text-muted mt-0.5">{desc}</p>
-              </div>
-            </button>
-          ))}
+          {showcaseServices.map((s, i) => {
+            const style = SERVICE_SHOWCASE_STYLE[i % SERVICE_SHOWCASE_STYLE.length]
+            return (
+              <button
+                key={s.slug}
+                onClick={() => navigate('/match')}
+                className="bg-white p-3.5 rounded-2xl shadow-card flex items-start gap-2.5 text-left"
+              >
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${style.accent === 'secondary' ? 'bg-secondary-100 text-secondary-700' : 'bg-primary-100 text-primary-700'}`}>
+                  <span className="text-lg" aria-hidden="true">{s.emoji}</span>
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-semibold text-ink text-sm leading-tight">{s.name}</h4>
+                  <p className="text-xs text-muted mt-0.5">{s.description}</p>
+                </div>
+              </button>
+            )
+          })}
           <button
             onClick={() => navigate('/match')}
             className="bg-white p-3.5 rounded-2xl shadow-card flex items-start gap-2.5 text-left"

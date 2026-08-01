@@ -66,8 +66,10 @@ export function PartnerAccountPage() {
       setProfile(updated)
       toast.success('Perfil atualizado com sucesso!')
     } catch (error) {
+      // Erro real já vira toast pelo interceptor de resposta do axios (mesmo padrão de
+      // handleAvatarChange, abaixo) — evita esconder a mensagem específica do backend
+      // (ex.: erro de validação de serviços) atrás de um toast genérico.
       console.error('Erro ao atualizar perfil', error)
-      toast.error('Erro ao atualizar perfil.')
     }
   }
 

@@ -73,8 +73,10 @@ export function AdminPartnersPage() {
       setShowForm(false)
       fetchPartners()
     } catch (error) {
+      // Não mostra um toast genérico aqui: o interceptor de resposta do axios já exibe a
+      // mensagem real do backend (ex.: erro de validação de serviços) — um toast genérico
+      // aqui só escondia essa mensagem específica.
       console.error('Erro ao cadastrar parceiro', error)
-      toast.error('Erro ao cadastrar parceiro.')
     }
   }
 

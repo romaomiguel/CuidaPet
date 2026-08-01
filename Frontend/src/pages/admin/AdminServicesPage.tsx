@@ -3,6 +3,7 @@ import { Wrench, Plus, X, Pencil } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 import { serviceCatalogService } from '@/services/serviceCatalog.service'
@@ -24,6 +25,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export function AdminServicesPage() {
+  const queryClient = useQueryClient()
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [audienceFilter, setAudienceFilter] = useState<'all' | Service['audience']>('all')
@@ -76,7 +78,11 @@ export function AdminServicesPage() {
       reset()
       setShowForm(false)
       setEditingId(null)
-      fetchServices()
+      await fetchServices()
+      // O resto do app lê o catálogo via useServiceCatalog(), que cacheia por 5min — sem
+      // invalidar aqui, quem já carregou a query em outra tela só veria a mudança depois
+      // que o staleTime expirasse.
+      queryClient.invalidateQueries({ queryKey: ['service-catalog'] })
     } catch (error) {
       console.error('Erro ao salvar serviço', error)
       toast.error('Erro ao salvar serviço.')
@@ -84,10 +90,16 @@ export function AdminServicesPage() {
   }
 
   const toggleActive = async (s: Service) => {
+    // Aposentar (não reativar) some o serviço do checklist de todo provedor a partir de
+    // agora — pede confirmação explícita pra evitar clique acidental com esse alcance.
+    if (s.isActive && !window.confirm(`Tem certeza que deseja aposentar "${s.name}"? Ele deixará de aparecer no checklist de novos cadastros/edições.`)) {
+      return
+    }
     try {
       await serviceCatalogService.update(s.id, { isActive: !s.isActive })
       toast.success(s.isActive ? 'Serviço aposentado.' : 'Serviço reativado.')
-      fetchServices()
+      await fetchServices()
+      queryClient.invalidateQueries({ queryKey: ['service-catalog'] })
     } catch (error) {
       console.error('Erro ao alterar status do serviço', error)
       toast.error('Erro ao alterar status.')

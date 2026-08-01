@@ -74,6 +74,15 @@ describe('ServicesService', () => {
         expect.objectContaining({ data: expect.objectContaining({ slug: 'passeio_2' }) }),
       );
     });
+
+    // Finding 6 (revisão final): um nome só com emoji/pontuação/script não-latino gera slug
+    // vazio depois de slugify — deve rejeitar em vez de criar uma linha com slug '' ou '_2'.
+    it('throws BadRequestException when the name slugifies to an empty string', async () => {
+      await expect(
+        service.create({ name: '🐾🐾🐾', emoji: '🐾', description: 'x', audience: 'petsitter' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.service.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('findAll', () => {

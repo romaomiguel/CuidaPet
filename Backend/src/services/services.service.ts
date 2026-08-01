@@ -20,6 +20,11 @@ export class ServicesService {
 
   async create(dto: CreateServiceDto) {
     const baseSlug = this.slugify(dto.name);
+    if (!baseSlug) {
+      throw new BadRequestException(
+        'Não foi possível gerar um identificador a partir desse nome — use letras ou números.',
+      );
+    }
     let slug = baseSlug;
     let suffix = 2;
     while (await this.prisma.service.findUnique({ where: { slug } })) {

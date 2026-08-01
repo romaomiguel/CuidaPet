@@ -117,11 +117,18 @@ export class PartnersService {
 
   async update(userId: string, dto: UpdatePartnerDto) {
     if (dto.servicesOffered) {
-      const existing = await this.prisma.partnerProfile.findUnique({ where: { userId }, select: { type: true } });
+      const existing = await this.prisma.partnerProfile.findUnique({
+        where: { userId },
+        select: { type: true, servicesOffered: true },
+      });
       if (!existing) {
         throw new NotFoundException('Perfil de parceiro não encontrado.');
       }
-      await this.servicesService.assertValidSlugs(dto.servicesOffered, existing.type);
+      // Só valida slugs NOVOS contra o catálogo ativo — um slug legado/aposentado que já
+      // estava em servicesOffered nunca pode travar o salvamento do resto do perfil.
+      // Ver Finding 1 da revisão final.
+      const newSlugs = dto.servicesOffered.filter((s) => !(existing.servicesOffered ?? []).includes(s));
+      await this.servicesService.assertValidSlugs(newSlugs, existing.type);
     }
 
     const updated = await this.prisma.partnerProfile.update({

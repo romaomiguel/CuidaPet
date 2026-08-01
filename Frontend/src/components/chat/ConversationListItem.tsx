@@ -45,9 +45,11 @@ export function ConversationListItem({ conversation, active, onClick }: Conversa
           {hasUnread && (
             <span
               className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-secondary-500 text-white text-[10px] font-bold flex items-center justify-center"
-              aria-label={`${unreadCount} mensagens não lidas`}
             >
-              {unreadCount > 9 ? '9+' : unreadCount}
+              {/* aria-label num <span> não-interativo não é lido pela maioria dos leitores de
+                  tela como nome acessível — texto visualmente oculto funciona de fato. */}
+              <span className="sr-only">{unreadCount} mensagens não lidas</span>
+              <span aria-hidden="true">{unreadCount > 9 ? '9+' : unreadCount}</span>
             </span>
           )}
         </div>

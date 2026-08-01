@@ -525,7 +525,13 @@ export class PetsittersService {
     }
 
     if (updatePetsitterProfileDto.services) {
-      await this.servicesService.assertValidSlugs(updatePetsitterProfileDto.services, 'petsitter');
+      // Só valida slugs NOVOS contra o catálogo ativo — um slug legado/aposentado/de outra
+      // audiência que já estava no perfil (ex.: banho_e_tosa recadastrado como petshop) nunca
+      // pode travar o salvamento do resto do perfil. Ver Finding 1 da revisão final.
+      const newSlugs = updatePetsitterProfileDto.services.filter(
+        (s) => !profile.services.includes(s),
+      );
+      await this.servicesService.assertValidSlugs(newSlugs, 'petsitter');
     }
 
     return this.prisma.petsitterProfile.update({
@@ -562,7 +568,15 @@ export class PetsittersService {
     const dto = updatePetsitterProfileDto;
 
     if (dto.services) {
-      await this.servicesService.assertValidSlugs(dto.services, 'petsitter');
+      // Mesmo raciocínio de update(): só valida os slugs NOVOS contra o catálogo ativo,
+      // nunca os que já estavam salvos no perfil (perfil pode não existir ainda — nesse
+      // caso não há slugs "antigos" a excluir, tudo é novo).
+      const existing = await this.prisma.petsitterProfile.findUnique({
+        where: { userId },
+        select: { services: true },
+      });
+      const newSlugs = dto.services.filter((s) => !(existing?.services ?? []).includes(s));
+      await this.servicesService.assertValidSlugs(newSlugs, 'petsitter');
     }
 
     const update = {

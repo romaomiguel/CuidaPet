@@ -166,7 +166,11 @@ export function PetsitterProfilePage() {
       queryClient.invalidateQueries({ queryKey: ['petsitter', 'me'] })
       toast.success('Perfil atualizado com sucesso! 🐾')
     },
-    onError: () => toast.error('Erro ao salvar. Tente novamente.'),
+    // Não mostra um toast genérico aqui: o interceptor de resposta do axios (Frontend/src/lib/axios.ts)
+    // já exibe a mensagem real do backend (ex.: "Serviço(s) inválido(s)..." do assertValidSlugs) —
+    // um toast genérico aqui só escondia essa mensagem específica. Mesmo padrão de
+    // PartnerAccountPage.tsx#handleAvatarChange.
+    onError: () => {},
   })
 
   const onFormError = (formErrors: any) => {
