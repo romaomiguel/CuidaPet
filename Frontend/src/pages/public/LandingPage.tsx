@@ -9,7 +9,7 @@ import { petsitterService } from '@/services/petsitter.service'
 import { CardPetsitter }    from '@/components/petsitter/CardPetsitter'
 import { SkeletonPetsitterCard } from '@/components/ui/Skeleton'
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete'
-import { serviceLabels, PETSITTER_SERVICES } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import type { ServiceType } from '@/types'
 
 const MATCH_STEPS = [
@@ -53,6 +53,7 @@ function FloatingServiceCard({ icon, title, desc, accent = 'primary', className,
 
 export function LandingPage() {
   const navigate = useNavigate()
+  const catalog = useServiceCatalog()
   const [city,    setCity]    = useState('')
   const [service, setService] = useState<ServiceType | ''>('')
 
@@ -127,12 +128,9 @@ export function LandingPage() {
                   className="sm:w-40 px-3 py-2 rounded-pill text-sm text-ink outline-none bg-background cursor-pointer"
                 >
                   <option value="">Serviço</option>
-                  {PETSITTER_SERVICES.map((k) => {
-                    const v = serviceLabels[k]
-                    return (
-                      <option key={k} value={k}>{v}</option>
-                    )
-                  })}
+                  {catalog.byAudience('petsitter').map((s) => (
+                    <option key={s.slug} value={s.slug}>{s.name}</option>
+                  ))}
                 </select>
                 <button type="submit" className="btn-primary flex-shrink-0 text-sm">
                   <Search size={14} /> Buscar

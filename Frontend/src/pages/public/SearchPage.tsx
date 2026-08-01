@@ -13,7 +13,7 @@ import { SkeletonPetsitterCard } from '@/components/ui/Skeleton'
 import { CityAutocomplete } from '@/components/ui/CityAutocomplete'
 import { useDisclosure }    from '@/hooks/useDisclosure'
 import type { PetsitterFilters as Filters, ServiceType, PartnerType } from '@/types'
-import { serviceLabels } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 
 const SORT_OPTIONS = [
   { value: 'rating',    label: 'Melhor avaliação' },
@@ -25,6 +25,7 @@ export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const mobileFilters = useDisclosure()
+  const catalog = useServiceCatalog()
 
   const [tab, setTab] = useState<'petsitter' | 'clinica' | 'petshop'>(
     (searchParams.get('tab') as 'petsitter' | 'clinica' | 'petshop') || 'petsitter',
@@ -271,7 +272,7 @@ export function SearchPage() {
                   )}
                   {filters.service && (
                     <span className="badge badge-green gap-1">
-                      {serviceLabels[filters.service]}
+                      {catalog.label(filters.service)}
                       <button onClick={() => setFilters(f => ({ ...f, service: undefined }))}><X size={11} /></button>
                     </span>
                   )}
@@ -300,7 +301,7 @@ export function SearchPage() {
                   )}
                   {partnerFilters.service && (
                     <span className="badge badge-green gap-1">
-                      {serviceLabels[partnerFilters.service]}
+                      {catalog.label(partnerFilters.service)}
                       <button onClick={() => setPartnerFilters(f => ({ ...f, service: undefined }))}><X size={11} /></button>
                     </span>
                   )}

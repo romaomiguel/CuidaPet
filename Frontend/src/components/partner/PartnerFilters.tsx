@@ -1,6 +1,6 @@
 import { X, SlidersHorizontal } from 'lucide-react'
-import { serviceLabels, PARTNER_SERVICES_BY_TYPE } from '@/utils'
-import type { PartnerType, ServiceType } from '@/types'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
+import type { ServiceType } from '@/types'
 
 interface PartnerFiltersState {
   city?: string
@@ -16,10 +16,12 @@ interface PartnerFiltersProps {
 }
 
 export function PartnerFilters({ partnerType, filters, onChange, onReset, resultCount }: PartnerFiltersProps) {
+  const catalog = useServiceCatalog()
+  const services = catalog.byAudience(partnerType)
+
   const set = (key: keyof PartnerFiltersState, value: unknown) =>
     onChange({ ...filters, [key]: value || undefined })
 
-  const services = PARTNER_SERVICES_BY_TYPE[partnerType]
   const hasActive = !!filters.service || !!filters.city
 
   return (
@@ -67,15 +69,15 @@ export function PartnerFilters({ partnerType, filters, onChange, onReset, result
             <span className="text-sm text-muted group-hover:text-ink">Todos os serviços</span>
           </label>
           {services.map((s) => (
-            <label key={s} className="flex items-center gap-2.5 cursor-pointer group">
+            <label key={s.slug} className="flex items-center gap-2.5 cursor-pointer group">
               <input
                 type="radio"
                 name="partner-service"
-                checked={filters.service === s}
-                onChange={() => set('service', s)}
+                checked={filters.service === s.slug}
+                onChange={() => set('service', s.slug)}
                 className="accent-primary-500"
               />
-              <span className="text-sm text-muted group-hover:text-ink">{serviceLabels[s]}</span>
+              <span className="text-sm text-muted group-hover:text-ink">{s.name}</span>
             </label>
           ))}
         </div>

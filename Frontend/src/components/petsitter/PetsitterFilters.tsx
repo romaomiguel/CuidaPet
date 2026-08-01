@@ -1,6 +1,6 @@
 import { X, SlidersHorizontal } from 'lucide-react'
 import type { PetsitterFilters as Filters } from '@/types'
-import { serviceLabels, PETSITTER_SERVICES } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 
 interface PetsitterFiltersProps {
   filters: Filters
@@ -9,8 +9,6 @@ interface PetsitterFiltersProps {
   resultCount?: number
 }
 
-const SERVICES = PETSITTER_SERVICES.map((s) => [s, serviceLabels[s]] as [string, string])
-
 const RATINGS = [
   { value: '4.5', label: '4.5+ ⭐' },
   { value: '4',   label: '4.0+ ⭐' },
@@ -18,6 +16,9 @@ const RATINGS = [
 ]
 
 export function PetsitterFilters({ filters, onChange, onReset, resultCount }: PetsitterFiltersProps) {
+  const catalog = useServiceCatalog()
+  const services = catalog.byAudience('petsitter')
+
   const set = (key: keyof Filters, value: unknown) =>
     onChange({ ...filters, [key]: value || undefined })
 
@@ -72,16 +73,16 @@ export function PetsitterFilters({ filters, onChange, onReset, resultCount }: Pe
             />
             <span className="text-sm text-muted group-hover:text-ink">Todos os serviços</span>
           </label>
-          {SERVICES.map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
+          {services.map((s) => (
+            <label key={s.slug} className="flex items-center gap-2.5 cursor-pointer group">
               <input
                 type="radio"
                 name="service"
-                checked={filters.service === key}
-                onChange={() => set('service', key)}
+                checked={filters.service === s.slug}
+                onChange={() => set('service', s.slug)}
                 className="accent-primary-500"
               />
-              <span className="text-sm text-muted group-hover:text-ink">{label}</span>
+              <span className="text-sm text-muted group-hover:text-ink">{s.name}</span>
             </label>
           ))}
         </div>
