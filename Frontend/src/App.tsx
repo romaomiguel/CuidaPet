@@ -26,6 +26,7 @@ import { AdminPetsittersPage }     from '@/pages/admin/AdminPetsittersPage'
 import { AdminPartnersPage }        from '@/pages/admin/AdminPartnersPage'
 import { AdminSupportMessagesPage } from '@/pages/admin/AdminSupportMessagesPage'
 import { AdminServiceSuggestionsPage } from '@/pages/admin/AdminServiceSuggestionsPage'
+import { AdminServicesPage } from '@/pages/admin/AdminServicesPage'
 import { DashboardLayout }         from '@/layouts/DashboardLayout'
 
 // Tutor e petsitter têm "Mensagens" embutido como aba dentro do respectivo hub de conta.
@@ -104,6 +105,7 @@ export default function App() {
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="petsitters" element={<AdminPetsittersPage />} />
         <Route path="partners"   element={<AdminPartnersPage />} />
+        <Route path="servicos" element={<AdminServicesPage />} />
         <Route path="sugestoes-servico" element={<AdminServiceSuggestionsPage />} />
         <Route path="suporte" element={<AdminSupportMessagesPage />} />
       </Route>
