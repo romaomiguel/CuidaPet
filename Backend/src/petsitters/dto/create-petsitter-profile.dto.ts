@@ -13,7 +13,7 @@ import {
   IsUrl,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ServiceType, PetSpecies } from '@prisma/client';
+import { PetSpecies } from '@prisma/client';
 
 export class CreatePetsitterProfileDto {
   @ApiProperty({ description: 'Biografia do petsitter' })
@@ -23,13 +23,13 @@ export class CreatePetsitterProfileDto {
   bio: string;
 
   @ApiProperty({
-    enum: ServiceType,
+    type: String,
     isArray: true,
-    description: 'Serviços oferecidos',
+    description: 'Serviços oferecidos (slugs do catálogo)',
   })
   @IsArray()
-  @IsEnum(ServiceType, { each: true })
-  services: ServiceType[];
+  @IsString({ each: true })
+  services: string[];
 
   @ApiProperty({ description: 'Preço por hora' })
   @IsNumber()

@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException, BadRequestException } from '@nest
 import { PartnersService } from './partners.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { ServicesService } from '../services/services.service';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
@@ -13,6 +14,10 @@ const storageServiceMock = {
   createAvatarUrl: jest.fn().mockResolvedValue(null),
   createAvatarUrls: jest.fn().mockResolvedValue(new Map()),
   deleteObject: jest.fn().mockResolvedValue(undefined),
+};
+
+const servicesServiceMock = {
+  assertValidSlugs: jest.fn().mockResolvedValue(undefined),
 };
 
 describe('PartnersService', () => {
@@ -41,16 +46,49 @@ describe('PartnersService', () => {
     storageServiceMock.createAvatarUrl.mockReset().mockResolvedValue(null);
     storageServiceMock.createAvatarUrls.mockReset().mockResolvedValue(new Map());
     storageServiceMock.deleteObject.mockReset().mockResolvedValue(undefined);
+    servicesServiceMock.assertValidSlugs.mockReset().mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PartnersService,
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storageServiceMock },
+        { provide: ServicesService, useValue: servicesServiceMock },
       ],
     }).compile();
 
     service = module.get<PartnersService>(PartnersService);
+  });
+
+  describe('service catalog validation', () => {
+    it('create() validates servicesOffered against dto.type as the audience', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'user-1' });
+      prisma.partnerProfile.findUnique.mockResolvedValue({
+        id: 'p-1', type: 'clinica', servicesOffered: ['consulta_veterinaria'], photos: [],
+        user: { name: 'x', email: 'x', isActive: true },
+      });
+
+      await service.create({
+        name: 'x', email: 'x@x.com', password: 'Abcdefg1', type: 'clinica' as any,
+        businessName: 'Clínica X', address: 'x', city: 'x', state: 'x',
+        servicesOffered: ['consulta_veterinaria'],
+      } as any);
+
+      expect(servicesServiceMock.assertValidSlugs).toHaveBeenCalledWith(['consulta_veterinaria'], 'clinica');
+    });
+
+    it('update() looks up the existing type to use as the audience', async () => {
+      prisma.partnerProfile.findUnique.mockResolvedValue({ type: 'petshop' });
+      prisma.partnerProfile.update.mockResolvedValue({
+        id: 'p-1', type: 'petshop', servicesOffered: ['venda_produtos'], photos: [],
+        user: { name: 'x', email: 'x', isActive: true },
+      });
+
+      await service.update('user-1', { servicesOffered: ['venda_produtos'] } as any);
+
+      expect(servicesServiceMock.assertValidSlugs).toHaveBeenCalledWith(['venda_produtos'], 'petshop');
+    });
   });
 
   describe('create', () => {

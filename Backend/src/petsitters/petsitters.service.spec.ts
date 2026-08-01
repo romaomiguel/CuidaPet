@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import { PetsittersService } from './petsitters.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { ServicesService } from '../services/services.service';
 
 function basePetsitter(overrides: Record<string, any> = {}) {
   return {
@@ -48,12 +49,16 @@ describe('PetsittersService.findMatches — clima/infraestrutura', () => {
       createAvatarUrls: jest.fn().mockResolvedValue(new Map()),
       createAvatarUrl: jest.fn().mockResolvedValue(null),
     };
+    const servicesService = {
+      assertValidSlugs: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PetsittersService,
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storage },
+        { provide: ServicesService, useValue: servicesService },
       ],
     }).compile();
 
@@ -131,22 +136,38 @@ describe('PetsittersService.findMatches — clima/infraestrutura', () => {
 describe('PetsittersService', () => {
   let service: PetsittersService;
   let prisma: {
-    petsitterProfile: { findUnique: jest.Mock; update: jest.Mock };
+    user: { findUnique: jest.Mock };
+    petsitterProfile: {
+      findUnique: jest.Mock;
+      update: jest.Mock;
+      create: jest.Mock;
+      findMany: jest.Mock;
+    };
   };
   let storageService: {
     createAvatarUrls: jest.Mock;
     createAvatarUrl: jest.Mock;
     deleteObject: jest.Mock;
   };
+  let servicesService: { assertValidSlugs: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
-      petsitterProfile: { findUnique: jest.fn(), update: jest.fn() },
+      user: { findUnique: jest.fn() },
+      petsitterProfile: {
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        create: jest.fn(),
+        findMany: jest.fn(),
+      },
     };
     storageService = {
       createAvatarUrls: jest.fn().mockResolvedValue(new Map()),
       createAvatarUrl: jest.fn().mockResolvedValue(null),
       deleteObject: jest.fn().mockResolvedValue(undefined),
+    };
+    servicesService = {
+      assertValidSlugs: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -154,10 +175,31 @@ describe('PetsittersService', () => {
         PetsittersService,
         { provide: PrismaService, useValue: prisma },
         { provide: StorageService, useValue: storageService },
+        { provide: ServicesService, useValue: servicesService },
       ],
     }).compile();
 
     service = module.get(PetsittersService);
+  });
+
+  describe('service catalog validation', () => {
+    it('create() validates services against the petsitter audience before saving', async () => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'user-1', role: 'petsitter' });
+      prisma.petsitterProfile.findUnique.mockResolvedValue(null);
+      prisma.petsitterProfile.create.mockResolvedValue({ id: 'p-1', services: ['passeio'] });
+
+      await service.create('user-1', { services: ['passeio'] } as any);
+
+      expect(servicesService.assertValidSlugs).toHaveBeenCalledWith(['passeio'], 'petsitter');
+    });
+
+    it('findMatches() validates the requested service slug before querying', async () => {
+      prisma.petsitterProfile.findMany.mockResolvedValue([]);
+
+      await service.findMatches({ service: 'passeio', species: 'cachorro', city: 'Cuiabá' } as any);
+
+      expect(servicesService.assertValidSlugs).toHaveBeenCalledWith(['passeio'], 'petsitter');
+    });
   });
 
   describe('addPhoto', () => {

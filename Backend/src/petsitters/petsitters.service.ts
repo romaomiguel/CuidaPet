@@ -12,12 +12,14 @@ import { CreatePetsitterProfileDto } from './dto/create-petsitter-profile.dto';
 import { UpdatePetsitterProfileDto } from './dto/update-petsitter-profile.dto';
 import { PetsitterStatus } from './dto/update-petsitter-status.dto';
 import { MatchPetsittersDto } from './dto/match-petsitters.dto';
+import { ServicesService } from '../services/services.service';
 
 @Injectable()
 export class PetsittersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly servicesService: ServicesService,
   ) {}
 
   /** `user.avatar` guarda um path do Storage (não uma URL) — troca por signed URL só na saída. */
@@ -74,6 +76,8 @@ export class PetsittersService {
         'O usuário já possui um perfil de petsitter.',
       );
     }
+
+    await this.servicesService.assertValidSlugs(createPetsitterProfileDto.services ?? [], 'petsitter');
 
     return this.prisma.petsitterProfile.create({
       data: { ...createPetsitterProfileDto, userId },
@@ -133,6 +137,8 @@ export class PetsittersService {
       needsAirConditioning, needsBackyard, preferredWalkSchedule, preferredHomeType,
       petEnergyLevel, petSocialLevel,
     } = params;
+
+    await this.servicesService.assertValidSlugs([service], 'petsitter');
 
     // Serviços que cobram por diária (hospedagem e creche)
     const DAILY_SERVICES = ['hospedagem', 'creche'];
@@ -518,6 +524,10 @@ export class PetsittersService {
       );
     }
 
+    if (updatePetsitterProfileDto.services) {
+      await this.servicesService.assertValidSlugs(updatePetsitterProfileDto.services, 'petsitter');
+    }
+
     return this.prisma.petsitterProfile.update({
       where: { id },
       data: {
@@ -550,6 +560,10 @@ export class PetsittersService {
     updatePetsitterProfileDto: UpdatePetsitterProfileDto,
   ) {
     const dto = updatePetsitterProfileDto;
+
+    if (dto.services) {
+      await this.servicesService.assertValidSlugs(dto.services, 'petsitter');
+    }
 
     const update = {
       bio: dto.bio,

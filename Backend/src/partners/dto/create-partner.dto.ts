@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PartnerType, ServiceType } from '@prisma/client';
+import { PartnerType } from '@prisma/client';
 
 export class CreatePartnerDto {
   @ApiProperty({ description: 'Nome do responsável/contato' })
@@ -65,9 +65,9 @@ export class CreatePartnerDto {
   @IsNotEmpty()
   state: string;
 
-  @ApiPropertyOptional({ enum: ServiceType, isArray: true, description: 'Serviços prestados' })
+  @ApiPropertyOptional({ type: String, isArray: true, description: 'Serviços prestados (slugs do catálogo)' })
   @IsOptional()
   @IsArray()
-  @IsEnum(ServiceType, { each: true })
-  servicesOffered?: ServiceType[];
+  @IsString({ each: true })
+  servicesOffered?: string[];
 }

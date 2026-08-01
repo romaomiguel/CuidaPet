@@ -8,7 +8,6 @@ import {
   ArrayMinSize,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ServiceType } from '@prisma/client';
 
 export class CreateBookingDto {
   @ApiProperty({ description: 'ID do petsitter' })
@@ -22,10 +21,10 @@ export class CreateBookingDto {
   @ArrayMinSize(1)
   petIds: string[];
 
-  @ApiProperty({ enum: ServiceType, description: 'Tipo de serviço' })
-  @IsEnum(ServiceType)
+  @ApiProperty({ type: String, description: 'Slug do serviço (catálogo)' })
+  @IsString()
   @IsNotEmpty()
-  service: ServiceType;
+  service: string;
 
   @ApiProperty({ description: 'Data/hora de início (ISO-8601)' })
   @IsDateString()

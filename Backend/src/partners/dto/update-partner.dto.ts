@@ -1,6 +1,5 @@
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ServiceType } from '@prisma/client';
 
 export class UpdatePartnerDto {
   @ApiPropertyOptional({ description: 'Nome fantasia / razão social' })
@@ -27,9 +26,9 @@ export class UpdatePartnerDto {
   @IsNotEmpty()
   state?: string;
 
-  @ApiPropertyOptional({ enum: ServiceType, isArray: true, description: 'Serviços prestados' })
+  @ApiPropertyOptional({ type: String, isArray: true, description: 'Serviços prestados (slugs do catálogo)' })
   @IsOptional()
   @IsArray()
-  @IsEnum(ServiceType, { each: true })
-  servicesOffered?: ServiceType[];
+  @IsString({ each: true })
+  servicesOffered?: string[];
 }

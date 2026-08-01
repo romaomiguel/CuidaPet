@@ -1,13 +1,13 @@
 import { IsString, IsNotEmpty, IsOptional, IsEnum, IsNumber, IsIn, Min } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ServiceType, PetSpecies } from '@prisma/client';
+import { PetSpecies } from '@prisma/client';
 
 export class MatchPetsittersDto {
-  @ApiProperty({ enum: ServiceType, description: 'Tipo de serviço desejado' })
-  @IsEnum(ServiceType)
+  @ApiProperty({ type: String, description: 'Slug do serviço desejado (catálogo)' })
+  @IsString()
   @IsNotEmpty()
-  service: ServiceType;
+  service: string;
 
   @ApiProperty({ enum: PetSpecies, description: 'Espécie do pet' })
   @IsEnum(PetSpecies)

@@ -23,7 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { PartnerType, ServiceType } from '@prisma/client';
+import { PartnerType } from '@prisma/client';
 import { StorageService, AVATAR_ALLOWED_EXTS } from '../storage/storage.service';
 import { avatarMulterOptions } from '../storage/multer-options';
 import * as crypto from 'crypto';
@@ -125,7 +125,7 @@ export class PartnersController {
   @ApiOperation({ summary: 'Listar parceiros públicos (Clínicas e Petshops) com paginação e filtros' })
   findAll(
     @Query('type') type?: PartnerType,
-    @Query('service') service?: ServiceType,
+    @Query('service') service?: string,
     @Query('city') city?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,

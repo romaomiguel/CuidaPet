@@ -1,16 +1,18 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { PartnerType, ServiceType } from '@prisma/client';
+import { PartnerType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService, AVATAR_SIGNED_URL_TTL_SECONDS } from '../storage/storage.service';
 import { CreatePartnerDto } from './dto/create-partner.dto';
 import { UpdatePartnerDto } from './dto/update-partner.dto';
+import { ServicesService } from '../services/services.service';
 
 @Injectable()
 export class PartnersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly servicesService: ServicesService,
   ) {}
 
   /** Assina paths de `photos` em lote — mesma ideia de withAvatarUrl, mas pro array de galeria.
@@ -35,6 +37,8 @@ export class PartnersService {
     if (existingEmail) {
       throw new ConflictException('E-mail já está em uso.');
     }
+
+    await this.servicesService.assertValidSlugs(dto.servicesOffered ?? [], dto.type);
 
     if (dto.cnpj) {
       const existingCnpj = await this.prisma.partnerProfile.findUnique({ where: { cnpj: dto.cnpj } });
@@ -112,6 +116,14 @@ export class PartnersService {
   }
 
   async update(userId: string, dto: UpdatePartnerDto) {
+    if (dto.servicesOffered) {
+      const existing = await this.prisma.partnerProfile.findUnique({ where: { userId }, select: { type: true } });
+      if (!existing) {
+        throw new NotFoundException('Perfil de parceiro não encontrado.');
+      }
+      await this.servicesService.assertValidSlugs(dto.servicesOffered, existing.type);
+    }
+
     const updated = await this.prisma.partnerProfile.update({
       where: { userId },
       data: {
@@ -220,14 +232,14 @@ export class PartnersService {
    * listagem de fato alcançável por busca, então fecha essa lacuna aqui.
    */
   async findAll(
-    filters: { type?: PartnerType; service?: ServiceType; city?: string; page?: number; limit?: number } = {},
+    filters: { type?: PartnerType; service?: string; city?: string; page?: number; limit?: number } = {},
   ) {
     const { type, service, city, page = 1, limit = 20 } = filters;
 
     const where: {
       user: { isActive: true };
       type?: PartnerType;
-      servicesOffered?: { has: ServiceType };
+      servicesOffered?: { has: string };
       city?: { contains: string; mode: 'insensitive' };
     } = { user: { isActive: true } };
     if (type) where.type = type;
