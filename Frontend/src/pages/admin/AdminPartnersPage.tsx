@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { partnerService } from '@/services/partner.service'
 import type { PartnerProfile, ServiceType } from '@/types'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { serviceLabels, PARTNER_SERVICES_BY_TYPE } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 
 const schema = z.object({
   name: z.string().min(1, 'Obrigatório'),
@@ -30,6 +30,7 @@ export function AdminPartnersPage() {
   const [partners, setPartners] = useState<PartnerProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const catalog = useServiceCatalog()
 
   const { register, handleSubmit, control, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -160,13 +161,13 @@ export function AdminPartnersPage() {
                   <label className="label mb-2">Serviços prestados</label>
                   <Controller control={control} name="servicesOffered" render={({ field }) => (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {PARTNER_SERVICES_BY_TYPE[selectedType].map((s) => {
-                        const checked = field.value.includes(s)
+                      {catalog.byAudience(selectedType).map((s) => {
+                        const checked = field.value.includes(s.slug)
                         return (
-                          <button key={s} type="button"
-                            onClick={() => field.onChange(checked ? field.value.filter((v) => v !== s) : [...field.value, s])}
+                          <button key={s.slug} type="button"
+                            onClick={() => field.onChange(checked ? field.value.filter((v) => v !== s.slug) : [...field.value, s.slug])}
                             className={checked ? 'toggle-chip-active' : 'toggle-chip'}>
-                            {serviceLabels[s]}
+                            {s.emoji} {s.name}
                           </button>
                         )
                       })}

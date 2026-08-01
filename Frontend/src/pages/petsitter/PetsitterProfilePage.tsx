@@ -8,7 +8,8 @@ import { authService }      from '@/services/auth.service'
 import { userService }      from '@/services/user.service'
 import { serviceSuggestionService } from '@/services/serviceSuggestion.service'
 import { useAuthStore }     from '@/store/auth.store'
-import { serviceLabels, avatarUrl, PETSITTER_SERVICES } from '@/utils'
+import { avatarUrl } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import { GalleryManager } from '@/components/GalleryManager'
 import { IS_MOCK_MODE }     from '@/lib/mock'
 import {
@@ -19,7 +20,6 @@ import type { ServiceType } from '@/types'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
-const SERVICES = PETSITTER_SERVICES
 const DAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
 const WEEKEND_DAYS = ['Sábado', 'Domingo']
 
@@ -76,6 +76,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 export function PetsitterProfilePage() {
   const { user, setUser } = useAuthStore()
+  const catalog = useServiceCatalog()
   const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
@@ -476,17 +477,17 @@ export function PetsitterProfilePage() {
                 <p className="text-sm text-muted -mt-1">Escolha os serviços que você vai prestar na plataforma.</p>
                 <Controller control={control} name="services" render={({ field }) => (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {SERVICES.map(s => {
-                      const checked = field.value.includes(s)
+                    {catalog.byAudience('petsitter').map(s => {
+                      const checked = field.value.includes(s.slug)
                       return (
-                        <button key={s} type="button"
-                          onClick={() => field.onChange(checked ? field.value.filter(v => v !== s) : [...field.value, s])}
+                        <button key={s.slug} type="button"
+                          onClick={() => field.onChange(checked ? field.value.filter(v => v !== s.slug) : [...field.value, s.slug])}
                           className={clsx(
                             'p-4 rounded-2xl text-left transition-all border-2',
                             checked ? 'bg-primary-50 border-primary-400' : 'bg-background border-transparent hover:border-stroke',
                           )}>
-                          <span className={clsx('font-heading font-bold', checked ? 'text-primary-700' : 'text-ink')}>{serviceLabels[s]}</span>
-                          {FULL_DAY_SERVICES.includes(s) && <span className="block text-xs font-normal text-muted mt-0.5">Dia inteiro</span>}
+                          <span className={clsx('font-heading font-bold', checked ? 'text-primary-700' : 'text-ink')}>{s.emoji} {s.name}</span>
+                          {FULL_DAY_SERVICES.includes(s.slug) && <span className="block text-xs font-normal text-muted mt-0.5">Dia inteiro</span>}
                         </button>
                       )
                     })}
@@ -623,7 +624,7 @@ export function PetsitterProfilePage() {
                     return (
                       <div key={s} className="bg-background rounded-2xl p-4 space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-ink text-sm">{serviceLabels[s]}</span>
+                          <span className="font-semibold text-ink text-sm">{catalog.label(s)}</span>
                           {isFullDay
                             ? <span className="badge badge-blue text-xs">Cobrança por dia</span>
                             : (

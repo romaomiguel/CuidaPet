@@ -10,7 +10,8 @@ import { serviceSuggestionService } from '@/services/serviceSuggestion.service'
 import { useAuthStore } from '@/store/auth.store'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { GalleryManager } from '@/components/GalleryManager'
-import { serviceLabels, PARTNER_SERVICES_BY_TYPE, avatarUrl } from '@/utils'
+import { avatarUrl } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import type { PartnerProfile, ServiceType } from '@/types'
 import clsx from 'clsx'
 
@@ -25,6 +26,7 @@ type FormData = z.infer<typeof schema>
 
 export function PartnerAccountPage() {
   const { user, setUser } = useAuthStore()
+  const catalog = useServiceCatalog()
   const [profile, setProfile] = useState<PartnerProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
@@ -178,7 +180,7 @@ export function PartnerAccountPage() {
   }
 
   const displayAvatar = avatarUrl(profile.businessName, user.avatarUrl ?? undefined)
-  const availableServices = PARTNER_SERVICES_BY_TYPE[profile.type]
+  const availableServices = catalog.byAudience(profile.type)
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -301,15 +303,15 @@ export function PartnerAccountPage() {
           <Controller control={control} name="servicesOffered" render={({ field }) => (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {availableServices.map((s) => {
-                const checked = field.value.includes(s)
+                const checked = field.value.includes(s.slug)
                 return (
-                  <button key={s} type="button"
-                    onClick={() => field.onChange(checked ? field.value.filter((v) => v !== s) : [...field.value, s])}
+                  <button key={s.slug} type="button"
+                    onClick={() => field.onChange(checked ? field.value.filter((v) => v !== s.slug) : [...field.value, s.slug])}
                     className={clsx(
                       'p-3 rounded-2xl text-left text-sm font-semibold transition-all border-2',
                       checked ? 'bg-primary-50 border-primary-400 text-primary-700' : 'bg-background border-transparent text-ink hover:border-stroke',
                     )}>
-                    {serviceLabels[s]}
+                    {s.emoji} {s.name}
                   </button>
                 )
               })}

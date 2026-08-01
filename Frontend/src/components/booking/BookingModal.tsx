@@ -8,7 +8,8 @@ import { Calendar as CalendarIcon, PawPrint, Wrench, StickyNote, DollarSign, Clo
 import { Modal }          from '@/components/ui/Modal'
 import { petService }     from '@/services/pet.service'
 import { bookingService } from '@/services/booking.service'
-import { serviceLabels, formatCurrency } from '@/utils'
+import { formatCurrency } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import { IS_MOCK_MODE } from '@/lib/mock'
 import type { PetsitterProfile, ServiceType } from '@/types'
 import clsx from 'clsx'
@@ -38,6 +39,7 @@ const DAY_MAP = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'S
 export function BookingModal({ isOpen, onClose, petsitter }: BookingModalProps) {
   const navigate     = useNavigate()
   const queryClient  = useQueryClient()
+  const catalog      = useServiceCatalog()
 
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -233,7 +235,7 @@ export function BookingModal({ isOpen, onClose, petsitter }: BookingModalProps) 
                 return (
                   <label key={s} className={clsx('flex items-center gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-all', checked ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300')}>
                     <input type="radio" value={s} {...register('service')} className="accent-primary-500" />
-                    <span className={clsx('text-sm font-medium', checked ? 'text-primary-700' : 'text-gray-700')}>{serviceLabels[s]}</span>
+                    <span className={clsx('text-sm font-medium', checked ? 'text-primary-700' : 'text-gray-700')}>{catalog.label(s)}</span>
                   </label>
                 )
               })}
