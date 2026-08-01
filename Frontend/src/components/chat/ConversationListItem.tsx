@@ -43,7 +43,10 @@ export function ConversationListItem({ conversation, active, onClick }: Conversa
             {preview}
           </p>
           {hasUnread && (
-            <span className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-secondary-500 text-white text-[10px] font-bold flex items-center justify-center">
+            <span
+              className="flex-shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-secondary-500 text-white text-[10px] font-bold flex items-center justify-center"
+              aria-label={`${unreadCount} mensagens não lidas`}
+            >
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}

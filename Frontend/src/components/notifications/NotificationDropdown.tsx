@@ -92,7 +92,7 @@ export function NotificationDropdown() {
       <button
         onClick={() => setOpen(v => !v)}
         className="relative p-2 rounded-xl text-muted hover:text-primary-600 hover:bg-background transition-all"
-        aria-label="Notificações"
+        aria-label={totalCount > 0 ? `Notificações (${totalCount} não lidas)` : 'Notificações'}
       >
         <Bell size={19} />
         {totalCount > 0 && (

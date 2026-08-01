@@ -348,7 +348,7 @@ export function PetsitterDashboardPage() {
                       key={f.key}
                       onClick={() => setHistoryFilter(f.key)}
                       className={clsx(
-                        'px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all border',
+                        'px-4 py-2 rounded-pill text-sm font-medium whitespace-nowrap transition-all border',
                         historyFilter === f.key
                           ? 'bg-primary-500 text-white border-primary-500 shadow-sm'
                           : 'bg-white text-muted border-stroke hover:border-primary-300',
@@ -409,6 +409,8 @@ export function PetsitterDashboardPage() {
                             <button
                               onClick={() => setExpanded(isExpanded ? null : b.id)}
                               className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-background transition-all"
+                              aria-label={isExpanded ? 'Recolher detalhes do agendamento' : 'Ver detalhes do agendamento'}
+                              aria-expanded={isExpanded}
                             >
                               <ChevronDown size={16} className={clsx('transition-transform', isExpanded && 'rotate-180')} />
                             </button>
@@ -483,7 +485,7 @@ export function PetsitterDashboardPage() {
           <div className="lg:col-span-4 flex flex-col gap-6">
             <div className="bg-primary-500 text-white rounded-[2rem] p-6 relative overflow-hidden shadow-lg">
               <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-              <h3 className="font-heading text-xl font-bold mb-1 relative z-10">Resumo do Mês</h3>
+              <h3 className="font-heading text-xl font-bold text-white mb-1 relative z-10">Resumo do Mês</h3>
               <p className="text-primary-100 text-sm mb-6 relative z-10">
                 {thisMonth.length > 0 ? 'Você tem uma semana movimentada!' : 'Ainda sem agendamentos este mês.'}
               </p>
