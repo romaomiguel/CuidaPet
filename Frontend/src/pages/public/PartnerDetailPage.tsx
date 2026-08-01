@@ -1,31 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { MapPin, ChevronLeft, Images, Home, Footprints, GraduationCap, Bath, DoorOpen, Users, Stethoscope, Syringe, ClipboardList, Cross, BedDouble, ShoppingBag, Pill } from 'lucide-react'
+import { MapPin, ChevronLeft, Images } from 'lucide-react'
 import { partnerService } from '@/services/partner.service'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { avatarUrl, serviceLabels } from '@/utils'
-import type { ServiceType } from '@/types'
+import { avatarUrl } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import clsx from 'clsx'
-
-const SERVICE_ICONS: Record<ServiceType, React.ReactNode> = {
-  hospedagem:   <Home size={20} />,
-  passeio:      <Footprints size={20} />,
-  adestramento: <GraduationCap size={20} />,
-  banho_e_tosa: <Bath size={20} />,
-  visita:       <DoorOpen size={20} />,
-  creche:       <Users size={20} />,
-  consulta_veterinaria: <Stethoscope size={20} />,
-  vacinacao:            <Syringe size={20} />,
-  exames:               <ClipboardList size={20} />,
-  cirurgia:             <Cross size={20} />,
-  internacao:           <BedDouble size={20} />,
-  venda_produtos:       <ShoppingBag size={20} />,
-  farmacia_veterinaria: <Pill size={20} />,
-}
 
 export function PartnerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const catalog = useServiceCatalog()
 
   const { data: partner, isLoading, isError } = useQuery({
     queryKey: ['partner', id],
@@ -100,12 +85,12 @@ export function PartnerDetailPage() {
                 {partner.servicesOffered.map((s, i) => (
                   <div key={s} className="flex items-center gap-3 p-4 bg-background rounded-2xl">
                     <div className={clsx(
-                      'w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0',
+                      'w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 text-xl',
                       i % 2 === 0 ? 'bg-primary-100 text-primary-700' : 'bg-secondary-100 text-secondary-700',
-                    )}>
-                      {SERVICE_ICONS[s]}
+                    )} aria-hidden="true">
+                      {catalog.emoji(s)}
                     </div>
-                    <span className="font-semibold text-ink text-sm">{serviceLabels[s]}</span>
+                    <span className="font-semibold text-ink text-sm">{catalog.label(s)}</span>
                   </div>
                 ))}
               </div>

@@ -3,8 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   MapPin, Star, Clock, Shield, ChevronLeft, Calendar, MessageCircle,
-  Navigation, Home, Footprints, GraduationCap, Bath, DoorOpen, Users, Images,
-  Stethoscope, Syringe, TestTube, Zap, AlertCircle, Package, Pill,
+  Navigation, Images,
 } from 'lucide-react'
 import { petsitterService } from '@/services/petsitter.service'
 import { reviewService }    from '@/services/review.service'
@@ -13,25 +12,10 @@ import { Skeleton }         from '@/components/ui/Skeleton'
 import { Modal }            from '@/components/ui/Modal'
 import { useAuthStore }     from '@/store/auth.store'
 import { BookingModal }     from '@/components/booking/BookingModal'
-import { formatCurrency, serviceLabels, speciesLabels, avatarUrl, formatDate } from '@/utils'
+import { formatCurrency, speciesLabels, avatarUrl, formatDate } from '@/utils'
+import { useServiceCatalog } from '@/hooks/useServiceCatalog'
 import clsx from 'clsx'
-import type { ServiceType, Review } from '@/types'
-
-const SERVICE_ICONS: Record<ServiceType, React.ReactNode> = {
-  hospedagem:            <Home size={20} />,
-  passeio:               <Footprints size={20} />,
-  adestramento:          <GraduationCap size={20} />,
-  banho_e_tosa:          <Bath size={20} />,
-  visita:                <DoorOpen size={20} />,
-  creche:                <Users size={20} />,
-  consulta_veterinaria:  <Stethoscope size={20} />,
-  vacinacao:             <Syringe size={20} />,
-  exames:                <TestTube size={20} />,
-  cirurgia:              <Zap size={20} />,
-  internacao:            <AlertCircle size={20} />,
-  venda_produtos:        <Package size={20} />,
-  farmacia_veterinaria:  <Pill size={20} />,
-}
+import type { Review } from '@/types'
 
 const REVIEWS_PREVIEW_COUNT = 3
 
@@ -72,6 +56,7 @@ export function PetsitterDetailPage() {
   const { isAuthenticated, user } = useAuthStore()
   const [bookingOpen, setBookingOpen] = useState(false)
   const [reviewsOpen, setReviewsOpen] = useState(false)
+  const catalog = useServiceCatalog()
 
   const { data: ps, isLoading, isError } = useQuery({
     queryKey: ['petsitter', id],
@@ -254,13 +239,13 @@ export function PetsitterDetailPage() {
                       >
                         <div className="flex items-center gap-4">
                           <div className={clsx(
-                            'w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0',
+                            'w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-xl',
                             i % 2 === 0 ? 'bg-primary-100 text-primary-700' : 'bg-secondary-100 text-secondary-700',
-                          )}>
-                            {SERVICE_ICONS[s]}
+                          )} aria-hidden="true">
+                            {catalog.emoji(s)}
                           </div>
                           <div>
-                            <h3 className="font-semibold text-ink">{serviceLabels[s]}</h3>
+                            <h3 className="font-semibold text-ink">{catalog.label(s)}</h3>
                             <p className="text-xs text-muted">
                               {config?.type === 'fixed' ? 'Valor fixo' : 'Por hora'}
                             </p>
