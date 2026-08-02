@@ -98,11 +98,12 @@ api.interceptors.response.use(
       }
     }
 
-    // Sessão realmente encerrada (refresh também falhou, ou é o próprio /auth/refresh/login)
-    if (error.response?.status === 401) {
+    // Sessão realmente encerrada (refresh também falhou) — não se aplica ao 401 do
+    // próprio /auth/login (senha errada): esse cai adiante e mostra o toast normal.
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       const publicPaths = ['/login', '/cadastro', '/', '/buscar']
       const isOnPublicPage = publicPaths.some(p => window.location.pathname.startsWith(p))
-      if (!isOnPublicPage && !isAuthEndpoint) {
+      if (!isOnPublicPage) {
         useAuthStore.getState().logout()
         window.location.href = '/'
       }
